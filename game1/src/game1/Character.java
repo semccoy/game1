@@ -5,6 +5,8 @@ import javalib.worldimages.Posn;
 import javalib.worldimages.RectangleImage;
 import javalib.worldimages.WorldImage;
 
+// havent started this yet
+
 public class Character {
 
     int width;
