@@ -26,8 +26,8 @@ import tester.*;
 import javalib.funworld.*;
 import javalib.worldimages.*;
 import javalib.worldcanvas.*;
-import java.util.*;
 import java.awt.*;
+import java.util.Random;
 
 public class Game1 extends World {
 
@@ -35,42 +35,50 @@ public class Game1 extends World {
     static int WIDTH = 1440;
     static int HEIGHT = 800;
     static int OFFSET = 8;
-    static int BACKWIDTH = (OFFSET - 2) * WIDTH / OFFSET;
+    static final int BACKWIDTH = (OFFSET - 2) * WIDTH / OFFSET;
     static int BACKHEIGHT = (OFFSET - 2) * HEIGHT / OFFSET;
     static Posn base = new Posn(WIDTH / 2, HEIGHT / 2); // centers things
+    static Posn upperleft = new Posn(200, 120);
     static int CELLSIZE = 40;
-    static int CELLSWIDE = WIDTH / CELLSIZE;
-    static int CELLSHIGH = HEIGHT / CELLSIZE;
+    static int CELLSWIDE = BACKWIDTH / CELLSIZE;
+    static int CELLSHIGH = BACKHEIGHT / CELLSIZE;
+
     public static RectangleImage[][] field;
 
     public static WorldImage universe = new RectangleImage(base, WIDTH, HEIGHT, Color.black);
     public static WorldImage background = new RectangleImage(base, BACKWIDTH, BACKHEIGHT, Color.lightGray);
 
-    
     // so this method currently returns a multidimensional array ("field") of rectangle images
     // i want to print out every rectangle image stored in that array, maintaining thier
-    // original positions, sizes, and colors whats the easiest way to do this?
-    public RectangleImage[][] setUpWorld() {
+     // original positions, sizes, and colors whats the easiest way to do this?
+    public RectangleImage setUpWorld() {
         field = new RectangleImage[CELLSWIDE][CELLSHIGH];
         for (int x = 0; x < CELLSWIDE; x++) {
             for (int y = 0; y < CELLSHIGH; y++) {
+                int XSTART = upperleft.x + x * CELLSIZE;
+                int YSTART = upperleft.y + y * CELLSIZE;
                 if (x == 0 || y == 0 || x == CELLSWIDE - 1 || y == CELLSHIGH - 1) {
-                    field[x][y] = new RectangleImage(new Posn(200 + x * CELLSIZE, 120 + y * CELLSIZE), CELLSIZE, CELLSIZE, Color.red);
+                    field[x][y] = new RectangleImage(new Posn(XSTART, YSTART), CELLSIZE, CELLSIZE, Color.red);
                 } else {
-                    field[x][y] = new RectangleImage(new Posn(200 + x * CELLSIZE, 120 + y * CELLSIZE), CELLSIZE, CELLSIZE, Color.white);
+                    field[x][y] = new RectangleImage(new Posn(XSTART, YSTART), CELLSIZE, CELLSIZE, Color.white);
                 }
             }
         }
-        return field;
+      return field[18][5];
     }
 
-    // maybe use this recursively with setUpWorld?
-//    public WorldImage grabber(RectangleImage[][] field, int x, int y) {
-//        return field[x][y];
+    // add to a list?
+//    public static RectangleImage arrayPrinter(RectangleImage[][] field) {
+//
+//        for (x = CELLSWIDE; x > 0; x--) {
+//            if (x == 0 || y == 0 || x == CELLSWIDE - 1 || y == CELLSHIGH - 1) {
+//                return new RectangleImage(new Posn(200 + x * CELLSIZE, 120 + y * CELLSIZE), CELLSIZE, CELLSIZE, Color.red);
+//            } else {
+//                return new OverlayImages(field[0][0], arrayGrabber(field, x, y - 1));
+//            }
+//        }
+//        return new OverlayImages(field[0][0], arrayGrabber(field, x - 1, y - 1));
 //    }
-    
-    
-
     public static int randomInt(int min, int max) {
         Random rand = new Random();
         int randomNum = rand.nextInt((max - min) + 1) + min;
@@ -93,7 +101,7 @@ public class Game1 extends World {
 
     public WorldImage makeImage() {
         return new OverlayImages(this.universe,
-                new OverlayImages(this.background/* something goes here */));
+                new OverlayImages(this.background, setUpWorld()));
     }
 
     public static void main(String[] args) {
@@ -101,5 +109,4 @@ public class Game1 extends World {
         Game1 game = new Game1(universe, field);
         game.bigBang(WIDTH, HEIGHT, 5);
     }
-
 }
