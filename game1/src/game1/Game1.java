@@ -10,6 +10,8 @@ import tester.*;
 
  // TODO:
  // - make objects (border rocks, character, internal node rocks)
+ // - make "victory space"
+ // - make non-random rock function and start functions for the time being
  // - make moving functions
  // - scoring functions
  // - levels
@@ -27,6 +29,7 @@ import javalib.funworld.*;
 import javalib.worldimages.*;
 import javalib.worldcanvas.*;
 import java.awt.*;
+import java.util.ArrayList;
 import java.util.Random;
 
 public class Game1 extends World {
@@ -35,49 +38,135 @@ public class Game1 extends World {
     static int WIDTH = 1440;
     static int HEIGHT = 800;
     static int OFFSET = 8;
-    static final int BACKWIDTH = (OFFSET - 2) * WIDTH / OFFSET;
+    static int BACKWIDTH = (OFFSET - 2) * WIDTH / OFFSET;
     static int BACKHEIGHT = (OFFSET - 2) * HEIGHT / OFFSET;
-    static Posn base = new Posn(WIDTH / 2, HEIGHT / 2); // centers things
+    static Posn base = new Posn(WIDTH / 2, HEIGHT / 2);
     static Posn upperleft = new Posn(200, 120);
     static int CELLSIZE = 40;
     static int CELLSWIDE = BACKWIDTH / CELLSIZE;
     static int CELLSHIGH = BACKHEIGHT / CELLSIZE;
-
-    public static RectangleImage[][] field;
+    int randomCharXStart = randomInt(1, CELLSWIDE - 2);
+    int randomCharYStart = randomInt(1, CELLSHIGH - 2);
+    static int numRocks = 3; // internal rocks
 
     public static WorldImage universe = new RectangleImage(base, WIDTH, HEIGHT, Color.black);
     public static WorldImage background = new RectangleImage(base, BACKWIDTH, BACKHEIGHT, Color.lightGray);
 
-    // so this method currently returns a multidimensional array ("field") of rectangle images
-    // i want to print out every rectangle image stored in that array, maintaining thier
-     // original positions, sizes, and colors whats the easiest way to do this?
-    public RectangleImage setUpWorld() {
-        field = new RectangleImage[CELLSWIDE][CELLSHIGH];
+    public WorldImage drawField(WorldImage background) {
+        Color color;
+        WorldImage newscene = background;
         for (int x = 0; x < CELLSWIDE; x++) {
             for (int y = 0; y < CELLSHIGH; y++) {
                 int XSTART = upperleft.x + x * CELLSIZE;
                 int YSTART = upperleft.y + y * CELLSIZE;
                 if (x == 0 || y == 0 || x == CELLSWIDE - 1 || y == CELLSHIGH - 1) {
-                    field[x][y] = new RectangleImage(new Posn(XSTART, YSTART), CELLSIZE, CELLSIZE, Color.red);
+                    color = Color.red;
                 } else {
-                    field[x][y] = new RectangleImage(new Posn(XSTART, YSTART), CELLSIZE, CELLSIZE, Color.white);
+                    color = Color.white;
+                }
+                newscene = new OverlayImages(newscene, new RectangleImage(new Posn(XSTART, YSTART), CELLSIZE, CELLSIZE, color));
+            }
+        }
+        return newscene;
+    }
+
+    // use this when someone beats a level
+    // also increase game speed for a few seconds for maximum celebratory effect
+    public WorldImage drawFieldWin(WorldImage background) {
+        Color color;
+        WorldImage newscene = background;
+        for (int x = 0; x < CELLSWIDE; x++) {
+            for (int y = 0; y < CELLSHIGH; y++) {
+                int XSTART = upperleft.x + x * CELLSIZE;
+                int YSTART = upperleft.y + y * CELLSIZE;
+                if (x == 0 || y == 0 || x == CELLSWIDE - 1 || y == CELLSHIGH - 1) {
+                    color = randomColor();
+                } else {
+                    color = randomColor();
+                }
+                newscene = new OverlayImages(newscene, new RectangleImage(new Posn(XSTART, YSTART), CELLSIZE, CELLSIZE, color));
+            }
+        }
+        return newscene;
+    }
+
+    // the issue with this atm is that everytime the world is drawn (like every game tick),
+    // drawRock is called again. since drawRock uses random numbers for positions of rocks,
+    // every time it's called, the rocks move around. i want the rocks to stay static over time
+    // ideally i could create the random numbers elsewhere and use another function
+    // to get them into drawRock, but haven't been able to do that yet. probably overkill too
+
+    // a rock appears in any given space with probability until numRocks rocks exist
+    public WorldImage drawRock(WorldImage background) {
+        Color color = Color.gray;
+        WorldImage newscene = background;
+        int rockCounter = 0; // number of rocks present
+        int chanceOfRock = 1000; // higher = lower chance of rock
+        while (rockCounter < numRocks) {
+            for (int x = 1; x < CELLSWIDE - 1; x++) {
+                for (int y = 1; y < CELLSHIGH - 1; y++) {
+                    boolean rockOrNot = rand.nextInt(chanceOfRock) == 0; // small enough that it's not distributed too heavily on the left
+                    if (rockOrNot & (rockCounter < numRocks)) {
+                        rockCounter++;
+                        int XSTART = upperleft.x + x * CELLSIZE;
+                        int YSTART = upperleft.y + y * CELLSIZE;
+                        newscene = new OverlayImages(newscene, new RectangleImage(new Posn(XSTART, YSTART), CELLSIZE, CELLSIZE, color));
+                    }
                 }
             }
         }
-      return field[18][5];
+        return newscene;
+    } // check if game is not over, if so, then return a static random rock display
+
+    public WorldImage drawCharacter(WorldImage background) {
+        Color color = Color.green;
+        WorldImage newscene = background;
+        int XSTART = upperleft.x + CELLSIZE;
+        int YSTART = upperleft.y + CELLSIZE;
+        newscene = new OverlayImages(newscene, new RectangleImage(new Posn(XSTART, YSTART), CELLSIZE, CELLSIZE, color));
+        return newscene;
     }
 
-    // add to a list?
-//    public static RectangleImage arrayPrinter(RectangleImage[][] field) {
+    public WorldImage drawRandomCharacter(WorldImage background) {
+        Color color = Color.green;
+        WorldImage newscene = background;
+        int XSTART = upperleft.x + randomCharXStart * CELLSIZE;
+        int YSTART = upperleft.y + randomCharYStart * CELLSIZE;
+        newscene = new OverlayImages(newscene, new RectangleImage(new Posn(XSTART, YSTART), CELLSIZE, CELLSIZE, color));
+        return newscene;
+    }
+
+//    public WorldImage drawGoal(WorldImage background) {
+//        Color color = Color.orange;
+//        WorldImage newscene = background;
+//        int XSTART = upperleft.x + 1000;
+//        int YSTART = upperleft.y + 1000;
+//        newscene = new OverlayImages(newscene, new RectangleImage(new Posn(XSTART, YSTART), CELLSIZE, CELLSIZE, color));
+//        return newscene;
+//    }
 //
-//        for (x = CELLSWIDE; x > 0; x--) {
-//            if (x == 0 || y == 0 || x == CELLSWIDE - 1 || y == CELLSHIGH - 1) {
-//                return new RectangleImage(new Posn(200 + x * CELLSIZE, 120 + y * CELLSIZE), CELLSIZE, CELLSIZE, Color.red);
-//            } else {
-//                return new OverlayImages(field[0][0], arrayGrabber(field, x, y - 1));
-//            }
+//    // should be on outside rim somewhere
+//    public WorldImage drawRandomGoal(WorldImage background) {
+//        Color color = Color.orange;
+//        WorldImage newscene = background;
+//        int XSTART = upperleft.x + randomCharXStart * CELLSIZE;
+//        int YSTART = upperleft.y + randomCharYStart * CELLSIZE;
+//        newscene = new OverlayImages(newscene, new RectangleImage(new Posn(XSTART, YSTART), CELLSIZE, CELLSIZE, color));
+//        return newscene;
+//    }
+//    static int[] xarray = new int[CELLSWIDE - 2];
+//    static int[] yarray = new int[CELLSHIGH - 2];
+//
+//    public static void test() {
+//
+//        for (int i = 0; i < CELLSWIDE - 2; i++) {
+//            int x1 = randomInt(1, CELLSWIDE - 1);
+//            xarray[i] = x1;
 //        }
-//        return new OverlayImages(field[0][0], arrayGrabber(field, x - 1, y - 1));
+//        for (int j = 0; j < CELLSHIGH - 2; j++) {
+//            int y1 = randomInt(1, CELLSHIGH - 1);
+//            yarray[j] = y1;
+//        }
 //    }
     public static int randomInt(int min, int max) {
         Random rand = new Random();
@@ -89,10 +178,9 @@ public class Game1 extends World {
         return new Color(randomInt(0, 255), randomInt(0, 255), randomInt(0, 255));
     }
 
-    public Game1(WorldImage uni, RectangleImage[][] field) {
+    public Game1(WorldImage uni) {
         super();
         this.universe = uni;
-        this.field = field;
     }
 
     public World onTick() {
@@ -100,13 +188,14 @@ public class Game1 extends World {
     }
 
     public WorldImage makeImage() {
-        return new OverlayImages(this.universe,
-                new OverlayImages(this.background, setUpWorld()));
+        return new OverlayImages(this.universe, // just stack everything in one OverlayImage
+                new OverlayImages(drawField(background), drawCharacter(drawRock(drawField(background))))); // this can probably be a lot shorter
+        //new OverlayImages(drawIntRocks(drawField(this.background)), drawCharacter(drawIntRocks(drawField(this.background))))));
     }
 
     public static void main(String[] args) {
         System.out.println("ok ");
-        Game1 game = new Game1(universe, field);
-        game.bigBang(WIDTH, HEIGHT, 5);
+        Game1 game = new Game1(universe);
+        game.bigBang(WIDTH, HEIGHT);
     }
 }
