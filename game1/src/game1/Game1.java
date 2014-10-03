@@ -27,9 +27,7 @@ import tester.*;
  */
 import javalib.funworld.*;
 import javalib.worldimages.*;
-import javalib.worldcanvas.*;
 import java.awt.*;
-import java.util.ArrayList;
 import java.util.Random;
 
 public class Game1 extends World {
@@ -42,15 +40,20 @@ public class Game1 extends World {
     static int BACKHEIGHT = (OFFSET - 2) * HEIGHT / OFFSET;
     static Posn base = new Posn(WIDTH / 2, HEIGHT / 2);
     static Posn upperleft = new Posn(200, 120);
+    static Posn lowerright = new Posn(1240, 680);
     static int CELLSIZE = 40;
     static int CELLSWIDE = BACKWIDTH / CELLSIZE;
     static int CELLSHIGH = BACKHEIGHT / CELLSIZE;
-    int randomCharXStart = randomInt(1, CELLSWIDE - 2);
-    int randomCharYStart = randomInt(1, CELLSHIGH - 2);
-    static int numRocks = 3; // internal rocks
 
     public static WorldImage universe = new RectangleImage(base, WIDTH, HEIGHT, Color.black);
     public static WorldImage background = new RectangleImage(base, BACKWIDTH, BACKHEIGHT, Color.lightGray);
+    
+    
+    public Square[] worldArray;
+    // all drawing functions should just add new Squares to worldArray
+    // makeImage should just iterate through and return everything to draw the world
+    
+    
 
     public WorldImage drawField(WorldImage background) {
         Color color;
@@ -73,50 +76,25 @@ public class Game1 extends World {
     // use this when someone beats a level
     // also increase game speed for a few seconds for maximum celebratory effect
     public WorldImage drawFieldWin(WorldImage background) {
-        Color color;
         WorldImage newscene = background;
         for (int x = 0; x < CELLSWIDE; x++) {
             for (int y = 0; y < CELLSHIGH; y++) {
                 int XSTART = upperleft.x + x * CELLSIZE;
                 int YSTART = upperleft.y + y * CELLSIZE;
-                if (x == 0 || y == 0 || x == CELLSWIDE - 1 || y == CELLSHIGH - 1) {
-                    color = randomColor();
-                } else {
-                    color = randomColor();
-                }
-                newscene = new OverlayImages(newscene, new RectangleImage(new Posn(XSTART, YSTART), CELLSIZE, CELLSIZE, color));
+                newscene = new OverlayImages(newscene, new RectangleImage(new Posn(XSTART, YSTART), CELLSIZE, CELLSIZE, randomColor()));
             }
         }
         return newscene;
     }
 
-    // the issue with this atm is that everytime the world is drawn (like every game tick),
-    // drawRock is called again. since drawRock uses random numbers for positions of rocks,
-    // every time it's called, the rocks move around. i want the rocks to stay static over time
-    // ideally i could create the random numbers elsewhere and use another function
-    // to get them into drawRock, but haven't been able to do that yet. probably overkill too
-
-    // a rock appears in any given space with probability until numRocks rocks exist
-    public WorldImage drawRock(WorldImage background) {
+    public WorldImage drawRock(int x, int y, WorldImage background) {
         Color color = Color.gray;
         WorldImage newscene = background;
-        int rockCounter = 0; // number of rocks present
-        int chanceOfRock = 1000; // higher = lower chance of rock
-        while (rockCounter < numRocks) {
-            for (int x = 1; x < CELLSWIDE - 1; x++) {
-                for (int y = 1; y < CELLSHIGH - 1; y++) {
-                    boolean rockOrNot = rand.nextInt(chanceOfRock) == 0; // small enough that it's not distributed too heavily on the left
-                    if (rockOrNot & (rockCounter < numRocks)) {
-                        rockCounter++;
-                        int XSTART = upperleft.x + x * CELLSIZE;
-                        int YSTART = upperleft.y + y * CELLSIZE;
-                        newscene = new OverlayImages(newscene, new RectangleImage(new Posn(XSTART, YSTART), CELLSIZE, CELLSIZE, color));
-                    }
-                }
-            }
-        }
+        int XSTART = upperleft.x + (x % (CELLSWIDE - 2) + 1) * CELLSIZE;
+        int YSTART = upperleft.y + (y % (CELLSHIGH - 2) + 1) * CELLSIZE;
+        newscene = new OverlayImages(newscene, new RectangleImage(new Posn(XSTART, YSTART), CELLSIZE, CELLSIZE, color));
         return newscene;
-    } // check if game is not over, if so, then return a static random rock display
+    }
 
     public WorldImage drawCharacter(WorldImage background) {
         Color color = Color.green;
@@ -127,47 +105,15 @@ public class Game1 extends World {
         return newscene;
     }
 
-    public WorldImage drawRandomCharacter(WorldImage background) {
-        Color color = Color.green;
+    public WorldImage drawGoal(WorldImage background) {
+        Color color = Color.cyan;
         WorldImage newscene = background;
-        int XSTART = upperleft.x + randomCharXStart * CELLSIZE;
-        int YSTART = upperleft.y + randomCharYStart * CELLSIZE;
+        int XSTART = lowerright.x - CELLSIZE;
+        int YSTART = lowerright.y - CELLSIZE;
         newscene = new OverlayImages(newscene, new RectangleImage(new Posn(XSTART, YSTART), CELLSIZE, CELLSIZE, color));
         return newscene;
     }
 
-//    public WorldImage drawGoal(WorldImage background) {
-//        Color color = Color.orange;
-//        WorldImage newscene = background;
-//        int XSTART = upperleft.x + 1000;
-//        int YSTART = upperleft.y + 1000;
-//        newscene = new OverlayImages(newscene, new RectangleImage(new Posn(XSTART, YSTART), CELLSIZE, CELLSIZE, color));
-//        return newscene;
-//    }
-//
-//    // should be on outside rim somewhere
-//    public WorldImage drawRandomGoal(WorldImage background) {
-//        Color color = Color.orange;
-//        WorldImage newscene = background;
-//        int XSTART = upperleft.x + randomCharXStart * CELLSIZE;
-//        int YSTART = upperleft.y + randomCharYStart * CELLSIZE;
-//        newscene = new OverlayImages(newscene, new RectangleImage(new Posn(XSTART, YSTART), CELLSIZE, CELLSIZE, color));
-//        return newscene;
-//    }
-//    static int[] xarray = new int[CELLSWIDE - 2];
-//    static int[] yarray = new int[CELLSHIGH - 2];
-//
-//    public static void test() {
-//
-//        for (int i = 0; i < CELLSWIDE - 2; i++) {
-//            int x1 = randomInt(1, CELLSWIDE - 1);
-//            xarray[i] = x1;
-//        }
-//        for (int j = 0; j < CELLSHIGH - 2; j++) {
-//            int y1 = randomInt(1, CELLSHIGH - 1);
-//            yarray[j] = y1;
-//        }
-//    }
     public static int randomInt(int min, int max) {
         Random rand = new Random();
         int randomNum = rand.nextInt((max - min) + 1) + min;
@@ -188,9 +134,7 @@ public class Game1 extends World {
     }
 
     public WorldImage makeImage() {
-        return new OverlayImages(this.universe, // just stack everything in one OverlayImage
-                new OverlayImages(drawField(background), drawCharacter(drawRock(drawField(background))))); // this can probably be a lot shorter
-        //new OverlayImages(drawIntRocks(drawField(this.background)), drawCharacter(drawIntRocks(drawField(this.background))))));
+        return new OverlayImages(this.universe, drawCharacter(drawGoal(drawRock(6, 0, drawField(background)))));
     }
 
     public static void main(String[] args) {
@@ -199,3 +143,21 @@ public class Game1 extends World {
         game.bigBang(WIDTH, HEIGHT);
     }
 }
+
+/*
+A field of play where the blocks move.
+
+A set of "live" blocks that are player controlled. (This "set" may contain one block.)
+
+A set of "dead" blocks that are no longer player controlled.
+
+A scoring system.
+
+A win or fail state.
+
+A control mechanism.
+
+You should write a short game manual that describes the rules of your game. You should run this past me so we can agree that the game is complex and interesting enough. You should use the invariants of your game to design testable components. 
+
+You should be able to build a completely automated version of your game for testing. For example, in my Tetris game, I might parameterize the game over a Tetrimino generator and a Input stream, so that I can test explicit sequences of inputs on Block sequences and ensure that the rules of the game are enforced.
+*/
