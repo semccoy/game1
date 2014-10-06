@@ -9,9 +9,6 @@ import tester.*;
  // problems to face: http://stackoverflow.com/questions/8876415/randomly-generate-directed-graph-on-a-grid
 
  // TODO:
- // - make objects (border rocks, character, internal node rocks)
- // - make "victory space"
- // - make non-random rock function and start functions for the time being
  // - make moving functions
  // - scoring functions
  // - levels
@@ -25,7 +22,7 @@ import tester.*;
  // - "this is impossible" button? no guarantee that game is playable
  //     so let "unsolvable" be a solution?
  */
-import javalib.funworld.*;
+import javalib.impworld.*;   //funworld or impworld?
 import javalib.worldimages.*;
 import java.awt.*;
 import java.util.ArrayList;
@@ -33,7 +30,7 @@ import java.util.Random;
 
 public class Game1 extends World {
 
-    static Random rand = new Random();
+    // clean these up later
     static int WIDTH = 1440;
     static int HEIGHT = 800;
     static int OFFSET = 8;
@@ -44,15 +41,47 @@ public class Game1 extends World {
     static int CELLSHIGH = BACKHEIGHT / CELLSIZE;
     static Posn base = new Posn(WIDTH / 2, HEIGHT / 2);
     static Posn upperleft = new Posn(200, 120);
-    static Posn lowerright = new Posn(1240, 680);
-
+    static Random rand = new Random();
     public static WorldImage universe = new RectangleImage(base, WIDTH, HEIGHT, Color.black);
     public static WorldImage background = new RectangleImage(base, BACKWIDTH, BACKHEIGHT, Color.lightGray);
-
-    // this is everything
+    public static WorldImage character = new RectangleImage(new Posn(240, 160), CELLSIZE, CELLSIZE, Color.green);
     private static ArrayList<RectangleImage> worldArray = new ArrayList<RectangleImage>();
 
-    public void addBackground(ArrayList<RectangleImage> worldArray) {
+    public static class Char {
+
+        static int charx = 240;
+        static int chary = 160;
+
+        //constructor
+        Char(int charx, int chary) {
+            this.charx = charx;
+            this.chary = chary;
+        }
+
+        public static Posn charPos() {
+            return new Posn(charx, chary);
+        }
+
+        public static void move(String key) {
+            if (key.equals("up") || key.equals("w")) {
+                chary = chary - CELLSIZE;
+            } else if (key.equals("left") || key.equals("a")) {
+                charx = charx - CELLSIZE;
+            } else if (key.equals("down") || key.equals("s")) {
+                chary = chary + CELLSIZE;
+            } else if (key.equals("right") || key.equals("d")) {
+                charx = charx + CELLSIZE;
+            }
+        }
+
+        public static WorldImage charImage() {
+            return new RectangleImage(charPos(), CELLSIZE, CELLSIZE, Color.green);
+        }
+
+    }
+
+    /// World building functions ///
+    public void addBackground() {
         Color color;
         for (int x = 0; x < CELLSWIDE; x++) {
             for (int y = 0; y < CELLSHIGH; y++) {
@@ -68,14 +97,14 @@ public class Game1 extends World {
         }
     }
 
-    public void addRock(ArrayList<RectangleImage> worldArray, int x, int y) {
-        Color color = Color.gray;
+    public void addRock(int x, int y) {
+        Color color = Color.darkGray;
         int XSTART = upperleft.x + (x % (CELLSWIDE - 2) + 1) * CELLSIZE;
         int YSTART = upperleft.y + (y % (CELLSHIGH - 2) + 1) * CELLSIZE;
         worldArray.add(new RectangleImage(new Posn(XSTART, YSTART), CELLSIZE, CELLSIZE, color));
     }
 
-    public void addGoal(ArrayList<RectangleImage> worldArray, int x, int y) {
+    public void addGoal(int x, int y) {
         Color color = Color.cyan;
         int XSTART = upperleft.x + (x % (CELLSWIDE - 2) + 1) * CELLSIZE;
         int YSTART = upperleft.y + (y % (CELLSHIGH - 2) + 1) * CELLSIZE;
@@ -83,32 +112,67 @@ public class Game1 extends World {
     }
 
     public ArrayList<RectangleImage> allTheSmallThings() {
-        addBackground(worldArray);
-        addRock(worldArray, 5, 7);
-        addRock(worldArray, 15, 7);
-        addGoal(worldArray, 10, 7);
+        addBackground();
+        addRock(5, 7);
+        addRock(15, 7);
+        addGoal(10, 7);
         worldArray.trimToSize();
         return worldArray;
     }
 
-    public WorldImage buildWorld(ArrayList<RectangleImage> worldArray) {
+    public WorldImage buildWorld() {
         WorldImage newscene = universe;
         for (int i = 0; i < worldArray.size(); i++) {
             RectangleImage temp = worldArray.get(i);
             newscene = new OverlayImages(newscene, temp);
         }
-        return newscene;
+        return new OverlayImages(newscene, Char.charImage());
     }
 
-    public WorldImage addCharacter(WorldImage background) {
-        Color color = Color.green;
-        WorldImage newscene = background;
-        int XSTART = upperleft.x + CELLSIZE;
-        int YSTART = upperleft.y + CELLSIZE;
-        newscene = new OverlayImages(newscene, new RectangleImage(new Posn(XSTART, YSTART), CELLSIZE, CELLSIZE, color));
-        return newscene;
+    /// Checker functions ///
+    // checks to see if Char is in legal playing 
+    public boolean inBounds() {
+        return (Char.charPos().x >= 240 && Char.charPos().x <= 1200
+                && Char.charPos().y >= 160 && Char.charPos().y <= 640);
     }
 
+    // checks to see if block above Char is a solid block
+    public boolean upCheck() {
+        int checkx = Char.charPos().x;
+        int checky = Char.charPos().y - CELLSIZE;
+        RectangleImage red = new RectangleImage(new Posn(checkx, checky), CELLSIZE, CELLSIZE, Color.red);
+        RectangleImage darkGray = new RectangleImage(new Posn(checkx, checky), CELLSIZE, CELLSIZE, Color.darkGray);
+        return (worldArray.contains(red) || worldArray.contains(darkGray));
+    }
+
+    // checks to see if block left of Char is a solid block
+    public boolean leftCheck() {
+        int checkx = Char.charPos().x - CELLSIZE;
+        int checky = Char.charPos().y;
+        RectangleImage red = new RectangleImage(new Posn(checkx, checky), CELLSIZE, CELLSIZE, Color.red);
+        RectangleImage darkGray = new RectangleImage(new Posn(checkx, checky), CELLSIZE, CELLSIZE, Color.darkGray);
+        return (worldArray.contains(red) || worldArray.contains(darkGray));
+    }
+
+    // checks to see if block below Char is a solid block
+    public boolean downCheck() {
+        int checkx = Char.charPos().x;
+        int checky = Char.charPos().y + CELLSIZE;
+        RectangleImage red = new RectangleImage(new Posn(checkx, checky), CELLSIZE, CELLSIZE, Color.red);
+        RectangleImage darkGray = new RectangleImage(new Posn(checkx, checky), CELLSIZE, CELLSIZE, Color.darkGray);
+        return (worldArray.contains(red) || worldArray.contains(darkGray));
+    }
+
+    // checks to see if block right of Char is a solid block
+    public boolean rightCheck() {
+        int checkx = Char.charPos().x + CELLSIZE;
+        int checky = Char.charPos().y;
+        RectangleImage red = new RectangleImage(new Posn(checkx, checky), CELLSIZE, CELLSIZE, Color.red);
+        RectangleImage darkGray = new RectangleImage(new Posn(checkx, checky), CELLSIZE, CELLSIZE, Color.darkGray);
+        return (worldArray.contains(red) || worldArray.contains(darkGray));
+    }
+
+    /// Auxiliary functions ///
     public static int randomInt(int min, int max) {
         Random rand = new Random();
         int randomNum = rand.nextInt((max - min) + 1) + min;
@@ -119,9 +183,7 @@ public class Game1 extends World {
         return new Color(randomInt(0, 255), randomInt(0, 255), randomInt(0, 255));
     }
 
-    // use this when someone beats a level
-    // also increase game speed for a few seconds for maximum celebratory effect
-    public WorldImage addWin(WorldImage background) {
+    public WorldImage winScreen(WorldImage background) {
         WorldImage newscene = background;
         for (int x = 0; x < CELLSWIDE; x++) {
             for (int y = 0; y < CELLSHIGH; y++) {
@@ -133,18 +195,23 @@ public class Game1 extends World {
         return newscene;
     }
 
+    /// Game worlds functions ///
     public Game1(WorldImage uni) {
         super();
         this.universe = uni;
     }
 
-    public World onTick() {
-        return this;
+    public void onTick() {
+        buildWorld();
+    }
+
+    public void onKeyEvent(String key) { // this doesnt work
+        Char.move(key);
     }
 
     public WorldImage makeImage() {
-        allTheSmallThings();
-        return buildWorld(worldArray);
+        allTheSmallThings(); // populates worldArray
+        return buildWorld(); // returns everything in worldArray
     }
 
     public static void main(String[] args) {
