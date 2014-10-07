@@ -27,6 +27,7 @@ import javalib.worldimages.*;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 public class Game1 extends World {
 
@@ -52,7 +53,6 @@ public class Game1 extends World {
         static int charx = 240;
         static int chary = 160;
 
-        //constructor
         Char(int charx, int chary) {
             this.charx = charx;
             this.chary = chary;
@@ -62,15 +62,24 @@ public class Game1 extends World {
             return new Posn(charx, chary);
         }
 
+        // works fine but doesn't move continuously/smoothly across screen, minor detail
         public static void move(String key) {
-            if (key.equals("up") || key.equals("w")) {
-                chary = chary - CELLSIZE;
-            } else if (key.equals("left") || key.equals("a")) {
-                charx = charx - CELLSIZE;
-            } else if (key.equals("down") || key.equals("s")) {
-                chary = chary + CELLSIZE;
-            } else if (key.equals("right") || key.equals("d")) {
-                charx = charx + CELLSIZE;
+            if ((key.equals("up") || key.equals("w")) && !upCheck()) {
+                while (!upCheck()) {
+                    chary = chary - CELLSIZE;
+                }
+            } else if ((key.equals("left") || key.equals("a")) && !leftCheck()) {
+                while (!leftCheck()) {
+                    charx = charx - CELLSIZE;
+                }
+            } else if ((key.equals("down") || key.equals("s")) && !downCheck()) {
+                while (!downCheck()) {
+                    chary = chary + CELLSIZE;
+                }
+            } else if ((key.equals("right") || key.equals("d")) && !rightCheck()) {
+                while (!rightCheck()) {
+                    charx = charx + CELLSIZE;
+                }
             }
         }
 
@@ -81,14 +90,14 @@ public class Game1 extends World {
     }
 
     /// World building functions ///
-    public void addBackground() {
+    public static void addBackground() {
         Color color;
         for (int x = 0; x < CELLSWIDE; x++) {
             for (int y = 0; y < CELLSHIGH; y++) {
                 int XSTART = upperleft.x + x * CELLSIZE;
                 int YSTART = upperleft.y + y * CELLSIZE;
                 if (x == 0 || y == 0 || x == CELLSWIDE - 1 || y == CELLSHIGH - 1) {
-                    color = Color.red;
+                    color = Color.gray;
                 } else {
                     color = Color.lightGray;
                 }
@@ -97,21 +106,21 @@ public class Game1 extends World {
         }
     }
 
-    public void addRock(int x, int y) {
+    public static void addRock(int x, int y) {
         Color color = Color.darkGray;
         int XSTART = upperleft.x + (x % (CELLSWIDE - 2) + 1) * CELLSIZE;
         int YSTART = upperleft.y + (y % (CELLSHIGH - 2) + 1) * CELLSIZE;
         worldArray.add(new RectangleImage(new Posn(XSTART, YSTART), CELLSIZE, CELLSIZE, color));
     }
 
-    public void addGoal(int x, int y) {
+    public static void addGoal(int x, int y) {
         Color color = Color.cyan;
         int XSTART = upperleft.x + (x % (CELLSWIDE - 2) + 1) * CELLSIZE;
         int YSTART = upperleft.y + (y % (CELLSHIGH - 2) + 1) * CELLSIZE;
         worldArray.add(new RectangleImage(new Posn(XSTART, YSTART), CELLSIZE, CELLSIZE, color));
     }
 
-    public ArrayList<RectangleImage> allTheSmallThings() {
+    public static ArrayList<RectangleImage> allTheSmallThings() {
         addBackground();
         addRock(5, 7);
         addRock(15, 7);
@@ -130,46 +139,40 @@ public class Game1 extends World {
     }
 
     /// Checker functions ///
-    // checks to see if Char is in legal playing 
-    public boolean inBounds() {
-        return (Char.charPos().x >= 240 && Char.charPos().x <= 1200
-                && Char.charPos().y >= 160 && Char.charPos().y <= 640);
-    }
-
     // checks to see if block above Char is a solid block
-    public boolean upCheck() {
+    public static boolean upCheck() {
         int checkx = Char.charPos().x;
         int checky = Char.charPos().y - CELLSIZE;
-        RectangleImage red = new RectangleImage(new Posn(checkx, checky), CELLSIZE, CELLSIZE, Color.red);
+        RectangleImage gray = new RectangleImage(new Posn(checkx, checky), CELLSIZE, CELLSIZE, Color.gray);
         RectangleImage darkGray = new RectangleImage(new Posn(checkx, checky), CELLSIZE, CELLSIZE, Color.darkGray);
-        return (worldArray.contains(red) || worldArray.contains(darkGray));
+        return (worldArray.contains(gray) || worldArray.contains(darkGray));
     }
 
     // checks to see if block left of Char is a solid block
-    public boolean leftCheck() {
+    public static boolean leftCheck() {
         int checkx = Char.charPos().x - CELLSIZE;
         int checky = Char.charPos().y;
-        RectangleImage red = new RectangleImage(new Posn(checkx, checky), CELLSIZE, CELLSIZE, Color.red);
+        RectangleImage gray = new RectangleImage(new Posn(checkx, checky), CELLSIZE, CELLSIZE, Color.gray);
         RectangleImage darkGray = new RectangleImage(new Posn(checkx, checky), CELLSIZE, CELLSIZE, Color.darkGray);
-        return (worldArray.contains(red) || worldArray.contains(darkGray));
+        return (worldArray.contains(gray) || worldArray.contains(darkGray));
     }
 
     // checks to see if block below Char is a solid block
-    public boolean downCheck() {
+    public static boolean downCheck() {
         int checkx = Char.charPos().x;
         int checky = Char.charPos().y + CELLSIZE;
-        RectangleImage red = new RectangleImage(new Posn(checkx, checky), CELLSIZE, CELLSIZE, Color.red);
+        RectangleImage gray = new RectangleImage(new Posn(checkx, checky), CELLSIZE, CELLSIZE, Color.gray);
         RectangleImage darkGray = new RectangleImage(new Posn(checkx, checky), CELLSIZE, CELLSIZE, Color.darkGray);
-        return (worldArray.contains(red) || worldArray.contains(darkGray));
+        return (worldArray.contains(gray) || worldArray.contains(darkGray));
     }
 
     // checks to see if block right of Char is a solid block
-    public boolean rightCheck() {
+    public static boolean rightCheck() {
         int checkx = Char.charPos().x + CELLSIZE;
         int checky = Char.charPos().y;
-        RectangleImage red = new RectangleImage(new Posn(checkx, checky), CELLSIZE, CELLSIZE, Color.red);
+        RectangleImage gray = new RectangleImage(new Posn(checkx, checky), CELLSIZE, CELLSIZE, Color.gray);
         RectangleImage darkGray = new RectangleImage(new Posn(checkx, checky), CELLSIZE, CELLSIZE, Color.darkGray);
-        return (worldArray.contains(red) || worldArray.contains(darkGray));
+        return (worldArray.contains(gray) || worldArray.contains(darkGray));
     }
 
     /// Auxiliary functions ///
@@ -203,18 +206,19 @@ public class Game1 extends World {
 
     public void onTick() {
         buildWorld();
+
     }
 
-    public void onKeyEvent(String key) { // this doesnt work
+    public void onKeyEvent(String key) {
         Char.move(key);
     }
 
     public WorldImage makeImage() {
-        allTheSmallThings(); // populates worldArray
         return buildWorld(); // returns everything in worldArray
     }
 
     public static void main(String[] args) {
+        allTheSmallThings(); // populates worldArray
         System.out.println("ok ");
         Game1 game = new Game1(universe);
         game.bigBang(WIDTH, HEIGHT);
