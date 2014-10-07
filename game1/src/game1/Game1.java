@@ -9,8 +9,7 @@ import tester.*;
  // problems to face: http://stackoverflow.com/questions/8876415/randomly-generate-directed-graph-on-a-grid
 
  // TODO:
- // - make moving functions
- // - scoring functions
+ // - display optimal number of movements to reach goal
  // - levels
  // - make solver
  // - make random start point
@@ -19,15 +18,14 @@ import tester.*;
  // - make random rocks off of solve path to confuse players
  // - grading things
  // - buttons in the universe to click to restart level / whole game?
- // - "this is impossible" button? no guarantee that game is playable
- //     so let "unsolvable" be a solution?
+ //  - JButton - http://docs.oracle.com/javase/tutorial/uiswing/components/button.html
  */
 import javalib.impworld.*;   //funworld or impworld?
 import javalib.worldimages.*;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.Random;
-import java.util.concurrent.TimeUnit;
+import javax.swing.JLabel;
 
 public class Game1 extends World {
 
@@ -40,6 +38,7 @@ public class Game1 extends World {
     static int CELLSIZE = 40;
     static int CELLSWIDE = BACKWIDTH / CELLSIZE;
     static int CELLSHIGH = BACKHEIGHT / CELLSIZE;
+    static int movements = 0;
     static Posn base = new Posn(WIDTH / 2, HEIGHT / 2);
     static Posn upperleft = new Posn(200, 120);
     static Random rand = new Random();
@@ -68,25 +67,28 @@ public class Game1 extends World {
                 while (!upCheck()) {
                     chary = chary - CELLSIZE;
                 }
+                movements++;
             } else if ((key.equals("left") || key.equals("a")) && !leftCheck()) {
                 while (!leftCheck()) {
                     charx = charx - CELLSIZE;
                 }
+                movements++;
             } else if ((key.equals("down") || key.equals("s")) && !downCheck()) {
                 while (!downCheck()) {
                     chary = chary + CELLSIZE;
                 }
+                movements++;
             } else if ((key.equals("right") || key.equals("d")) && !rightCheck()) {
                 while (!rightCheck()) {
                     charx = charx + CELLSIZE;
                 }
+                movements++;
             }
         }
 
         public static WorldImage charImage() {
             return new RectangleImage(charPos(), CELLSIZE, CELLSIZE, Color.green);
         }
-
     }
 
     /// World building functions ///
@@ -122,6 +124,7 @@ public class Game1 extends World {
 
     public static ArrayList<RectangleImage> allTheSmallThings() {
         addBackground();
+        addRock(0, 8);
         addRock(5, 7);
         addRock(15, 7);
         addGoal(10, 7);
@@ -135,7 +138,9 @@ public class Game1 extends World {
             RectangleImage temp = worldArray.get(i);
             newscene = new OverlayImages(newscene, temp);
         }
-        return new OverlayImages(newscene, Char.charImage());
+
+        return new OverlayImages(newscene,
+                new OverlayImages(showScore(), Char.charImage()));
     }
 
     /// Checker functions ///
@@ -198,6 +203,10 @@ public class Game1 extends World {
         return newscene;
     }
 
+    public WorldImage showScore() {
+        return new TextImage(new Posn(200, 60), "You have blocked: " + movements + " times!", 20, Color.white);
+    }
+
     /// Game worlds functions ///
     public Game1(WorldImage uni) {
         super();
@@ -206,15 +215,16 @@ public class Game1 extends World {
 
     public void onTick() {
         buildWorld();
-
     }
 
     public void onKeyEvent(String key) {
         Char.move(key);
+
     }
 
     public WorldImage makeImage() {
         return buildWorld(); // returns everything in worldArray
+
     }
 
     public static void main(String[] args) {
