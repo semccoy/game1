@@ -1,6 +1,5 @@
 package game1;
 
-import tester.*;
 /*
  // IDEA:
  // basic idea: that sliding thing from pokemon - http://cdn.bulbagarden.net/upload/2/2c/Slip_ice_demo.gif
@@ -9,7 +8,6 @@ import tester.*;
  // problems to face: http://stackoverflow.com/questions/8876415/randomly-generate-directed-graph-on-a-grid
 
  // TODO:
- // - display optimal number of movements to reach goal
  // - levels
  // - make solver
  // - make random start point
@@ -20,12 +18,12 @@ import tester.*;
  // - buttons in the universe to click to restart level / whole game?
  //  - JButton - http://docs.oracle.com/javase/tutorial/uiswing/components/button.html
  */
+import tester.*;
 import javalib.impworld.*;   //funworld or impworld?
 import javalib.worldimages.*;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.Random;
-import javax.swing.JLabel;
 
 public class Game1 extends World {
 
@@ -44,13 +42,13 @@ public class Game1 extends World {
     static Random rand = new Random();
     public static WorldImage universe = new RectangleImage(base, WIDTH, HEIGHT, Color.black);
     public static WorldImage background = new RectangleImage(base, BACKWIDTH, BACKHEIGHT, Color.lightGray);
-    public static WorldImage character = new RectangleImage(new Posn(240, 160), CELLSIZE, CELLSIZE, Color.green);
+    public static RectangleImage start = new RectangleImage(new Posn(240, 160), CELLSIZE, CELLSIZE, Color.green);
     private static ArrayList<RectangleImage> worldArray = new ArrayList<RectangleImage>();
 
     public static class Char {
 
-        static int charx = 240;
-        static int chary = 160;
+        static int charx = 240; // + randomInt(0,24) * CELLSIZE;
+        static int chary = 160; // + randomInt(0,12) * CELLSIZE;
 
         Char(int charx, int chary) {
             this.charx = charx;
@@ -61,7 +59,6 @@ public class Game1 extends World {
             return new Posn(charx, chary);
         }
 
-        // works fine but doesn't move continuously/smoothly across screen, minor detail
         public static void move(String key) {
             if ((key.equals("up") || key.equals("w")) && !upCheck()) {
                 while (!upCheck()) {
@@ -86,9 +83,252 @@ public class Game1 extends World {
             }
         }
 
+        /// Checker functions ///
+        // checks to see if block above Char is a solid block
+        public static boolean upCheck() {
+            int checkx = Char.charPos().x;
+            int checky = Char.charPos().y - CELLSIZE;
+            RectangleImage gray = new RectangleImage(new Posn(checkx, checky), CELLSIZE, CELLSIZE, Color.gray);
+            RectangleImage darkGray = new RectangleImage(new Posn(checkx, checky), CELLSIZE, CELLSIZE, Color.darkGray);
+            return (worldArray.contains(gray) || worldArray.contains(darkGray));
+        }
+
+        // checks to see if block left of Char is a solid block
+        public static boolean leftCheck() {
+            int checkx = Char.charPos().x - CELLSIZE;
+            int checky = Char.charPos().y;
+            RectangleImage gray = new RectangleImage(new Posn(checkx, checky), CELLSIZE, CELLSIZE, Color.gray);
+            RectangleImage darkGray = new RectangleImage(new Posn(checkx, checky), CELLSIZE, CELLSIZE, Color.darkGray);
+            return (worldArray.contains(gray) || worldArray.contains(darkGray));
+        }
+
+        // checks to see if block below Char is a solid block
+        public static boolean downCheck() {
+            int checkx = Char.charPos().x;
+            int checky = Char.charPos().y + CELLSIZE;
+            RectangleImage gray = new RectangleImage(new Posn(checkx, checky), CELLSIZE, CELLSIZE, Color.gray);
+            RectangleImage darkGray = new RectangleImage(new Posn(checkx, checky), CELLSIZE, CELLSIZE, Color.darkGray);
+            return (worldArray.contains(gray) || worldArray.contains(darkGray));
+        }
+
+        // checks to see if block right of Char is a solid block
+        public static boolean rightCheck() {
+            int checkx = Char.charPos().x + CELLSIZE;
+            int checky = Char.charPos().y;
+            RectangleImage gray = new RectangleImage(new Posn(checkx, checky), CELLSIZE, CELLSIZE, Color.gray);
+            RectangleImage darkGray = new RectangleImage(new Posn(checkx, checky), CELLSIZE, CELLSIZE, Color.darkGray);
+            return (worldArray.contains(gray) || worldArray.contains(darkGray));
+        }
+
         public static WorldImage charImage() {
             return new RectangleImage(charPos(), CELLSIZE, CELLSIZE, Color.green);
         }
+    }
+
+    public static class Mover {
+
+        static int moverx = 240;
+        static int movery = 160;
+
+        Mover(int moverx, int movery) {
+            this.moverx = moverx;
+            this.movery = movery;
+        }
+
+        public static Posn moverPos() {
+            return new Posn(moverx, movery);
+        }
+
+//        public static void move(String key) {
+//            if ((key.equals("up") || key.equals("w")) && !upCheck()) {
+//                while (!upCheck()) {
+//                    movery = movery - CELLSIZE;
+//                }
+//                movements++;
+//            } else if ((key.equals("left") || key.equals("a")) && !leftCheck()) {
+//                while (!leftCheck()) {
+//                    moverx = moverx - CELLSIZE;
+//                }
+//                movements++;
+//            } else if ((key.equals("down") || key.equals("s")) && !downCheck()) {
+//                while (!downCheck()) {
+//                    movery = movery + CELLSIZE;
+//                }
+//                movements++;
+//            } else if ((key.equals("right") || key.equals("d")) && !rightCheck()) {
+//                while (!rightCheck()) {
+//                    moverx = moverx + CELLSIZE;
+//                }
+//                movements++;
+//            }
+//        }
+        /// Checker functions ///
+        // checks to see if block above Char is a solid block or was just moved to ("is yellow")
+        public static boolean upCheck() {
+            int checkx = Mover.moverPos().x;
+            int checky = Mover.moverPos().y - CELLSIZE;
+            RectangleImage gray = new RectangleImage(new Posn(checkx, checky), CELLSIZE, CELLSIZE, Color.gray);
+            RectangleImage darkGray = new RectangleImage(new Posn(checkx, checky), CELLSIZE, CELLSIZE, Color.darkGray);
+            RectangleImage yellow = new RectangleImage(new Posn(checkx, checky), CELLSIZE, CELLSIZE, Color.yellow);
+            return (worldArray.contains(gray) || worldArray.contains(darkGray) || worldArray.contains(yellow));
+        }
+
+        // checks to see if block left of Mover is a solid block or was just moved to ("is yellow")
+        public static boolean leftCheck() {
+            int checkx = Mover.moverPos().x - CELLSIZE;
+            int checky = Mover.moverPos().y;
+            RectangleImage gray = new RectangleImage(new Posn(checkx, checky), CELLSIZE, CELLSIZE, Color.gray);
+            RectangleImage darkGray = new RectangleImage(new Posn(checkx, checky), CELLSIZE, CELLSIZE, Color.darkGray);
+            RectangleImage yellow = new RectangleImage(new Posn(checkx, checky), CELLSIZE, CELLSIZE, Color.yellow);
+            return (worldArray.contains(gray) || worldArray.contains(darkGray) || worldArray.contains(yellow));
+        }
+
+        // checks to see if block below Mover is a solid block or was just moved to ("is yellow")
+        public static boolean downCheck() {
+            int checkx = Mover.moverPos().x;
+            int checky = Mover.moverPos().y + CELLSIZE;
+            RectangleImage gray = new RectangleImage(new Posn(checkx, checky), CELLSIZE, CELLSIZE, Color.gray);
+            RectangleImage darkGray = new RectangleImage(new Posn(checkx, checky), CELLSIZE, CELLSIZE, Color.darkGray);
+            RectangleImage yellow = new RectangleImage(new Posn(checkx, checky), CELLSIZE, CELLSIZE, Color.yellow);
+            return (worldArray.contains(gray) || worldArray.contains(darkGray) || worldArray.contains(yellow));
+        }
+
+        // checks to see if block right of Mover is a solid block or was just moved to ("is yellow")
+        public static boolean rightCheck() {
+            int checkx = Mover.moverPos().x + CELLSIZE;
+            int checky = Mover.moverPos().y;
+            RectangleImage gray = new RectangleImage(new Posn(checkx, checky), CELLSIZE, CELLSIZE, Color.gray);
+            RectangleImage darkGray = new RectangleImage(new Posn(checkx, checky), CELLSIZE, CELLSIZE, Color.darkGray);
+            RectangleImage yellow = new RectangleImage(new Posn(checkx, checky), CELLSIZE, CELLSIZE, Color.yellow);
+            return (worldArray.contains(gray) || worldArray.contains(darkGray) || worldArray.contains(yellow));
+        }
+
+        public static WorldImage moverImage() {
+            return new RectangleImage(moverPos(), CELLSIZE, CELLSIZE, Color.yellow);
+        }
+
+        public static RectangleImage upNeighbor() {
+            return new RectangleImage(new Posn(moverPos().x, moverPos().y - CELLSIZE), CELLSIZE, CELLSIZE, Color.yellow);
+        }
+
+        public static RectangleImage leftNeighbor() {
+            return new RectangleImage(new Posn(moverPos().x - CELLSIZE, moverPos().y), CELLSIZE, CELLSIZE, Color.yellow);
+        }
+
+        public static RectangleImage downNeighbor() {
+            return new RectangleImage(new Posn(moverPos().x, moverPos().y + CELLSIZE), CELLSIZE, CELLSIZE, Color.yellow);
+        }
+
+        public static RectangleImage rightNeighbor() {
+            return new RectangleImage(new Posn(moverPos().x + CELLSIZE, moverPos().y), CELLSIZE, CELLSIZE, Color.yellow);
+        }
+    } //
+
+    /// Path solving functions ///
+    // starts in same place as Char does to solve optimal path from your pov
+    static Mover pather = new Mover(Char.charPos().x, Char.charPos().y);
+
+    private static ArrayList<RectangleImage> pathArray = new ArrayList<RectangleImage>();
+    private static ArrayList<RectangleImage> tempPaths = new ArrayList<RectangleImage>();
+
+    // call this in buildWorld
+    public static void pathGen() {
+        patherDirectionalChecker(); // tempPaths now holds all valid next-squares (non-solids and non-just-moved-froms)
+        int direction = randomInt(0, tempPaths.size() - 1); // picks an integer that corresponds with the direction of next movement
+        pathArray.add(tempPaths.get(direction)); // add that square to pathArray, that's where we're going next -- up to here works
+        tempPaths.clear(); // clears tempPaths so it can be used again upon recurring
+        RectangleImage ultimate = pathArray.get(pathArray.size() - 1); // last thing in pathArray
+        RectangleImage penultimate = pathArray.get(pathArray.size() - 2); // second last thing in pathArray
+        int dx = (ultimate.pinhole.x - penultimate.pinhole.x) / CELLSIZE; // how we figure out which direction we just went
+        int dy = (ultimate.pinhole.y - penultimate.pinhole.y) / CELLSIZE; // how we figure out which direction we just went
+        int distToUpWall = (ultimate.pinhole.y - 160) / 40;
+        int distToLeftWall = (ultimate.pinhole.x - 200) / 40;
+        int distToDownWall = (600 - ultimate.pinhole.y) / 40;
+        int distToRightWall = (1160 - ultimate.pinhole.x) / 40;
+
+        if (dy < 0) {
+            int reps = randomInt(0, distToUpWall);
+            int counter = 0;
+            while (counter < reps) {
+                pathArray.add(new RectangleImage(new Posn(ultimate.pinhole.x, ultimate.pinhole.y + dy), CELLSIZE, CELLSIZE, Color.yellow));
+                ultimate = pathArray.get(pathArray.size() - 1);
+                counter++;
+            }
+            if (ultimate.pinhole.y > 160) {
+                addRock(ultimate.pinhole.x / CELLSIZE, ultimate.pinhole.y / CELLSIZE - 1);
+            }
+        }
+
+        if (dx < 0) {
+            int reps = randomInt(0, distToLeftWall);
+            int counter = 0;
+            while (counter < reps) {
+                pathArray.add(new RectangleImage(new Posn(ultimate.pinhole.x + dx, ultimate.pinhole.y), CELLSIZE, CELLSIZE, Color.yellow));
+                ultimate = pathArray.get(pathArray.size() - 1);
+                counter++;
+            }
+            if (ultimate.pinhole.x > 240) {
+                addRock(ultimate.pinhole.x / CELLSIZE - 1, ultimate.pinhole.y / CELLSIZE);
+            }
+        }
+
+        if (dy > 0) {
+            int reps = randomInt(0, distToDownWall);
+            int counter = 0;
+            while (counter < reps) {
+                pathArray.add(new RectangleImage(new Posn(ultimate.pinhole.x, ultimate.pinhole.y + dy), CELLSIZE, CELLSIZE, Color.yellow));
+                ultimate = pathArray.get(pathArray.size() - 1);
+                counter++;
+            }
+            if (ultimate.pinhole.y < 600) {
+                addRock(ultimate.pinhole.x / CELLSIZE, ultimate.pinhole.y / CELLSIZE + 1);
+            }
+        }
+
+        if (dx > 0) {
+            int reps = randomInt(0, distToRightWall);
+            int counter = 0;
+            while (counter < reps) {
+                pathArray.add(new RectangleImage(new Posn(ultimate.pinhole.x + dx, ultimate.pinhole.y), CELLSIZE, CELLSIZE, Color.yellow));
+                ultimate = pathArray.get(pathArray.size() - 1);
+                counter++;
+            }
+            if (ultimate.pinhole.x < 1160) {
+                addRock(ultimate.pinhole.x / CELLSIZE + 1, ultimate.pinhole.y / CELLSIZE);
+            }
+        }
+        
+        //pather = new Mover(ultimate.pinhole.x, ultimate.pinhole.y);
+
+        // recur until cannot move any more
+        // solver can then follow the "yellow" path (invisible to player)
+        
+        System.out.println("pathGen is ok");
+
+    }
+
+    public static void patherDirectionalChecker() {
+        // if these paths are legal (i.e., not solid and not just moved from), add them to tempPaths
+        if (!pather.upCheck()) {
+            tempPaths.add(pather.upNeighbor());
+        }
+        if (!pather.leftCheck()) {
+            tempPaths.add(pather.leftNeighbor());
+        }
+        if (!pather.downCheck()) {
+            tempPaths.add(pather.downNeighbor());
+        }
+        if (!pather.rightCheck()) {
+            tempPaths.add(pather.rightNeighbor());
+        }
+    }
+
+    public static void pathStart() {
+        pathArray.add(start); // first segment of optimal path is where user starts
+    }
+
+    public static boolean canMove() {
+        return (!pather.upCheck() || !pather.leftCheck() || !pather.downCheck() || !pather.rightCheck());
     }
 
     /// World building functions ///
@@ -123,11 +363,9 @@ public class Game1 extends World {
     }
 
     public static ArrayList<RectangleImage> allTheSmallThings() {
+        pathStart();
         addBackground();
-        addRock(0, 8);
-        addRock(5, 7);
-        addRock(15, 7);
-        addGoal(10, 7);
+        pathGen();
         worldArray.trimToSize();
         return worldArray;
     }
@@ -141,43 +379,6 @@ public class Game1 extends World {
 
         return new OverlayImages(newscene,
                 new OverlayImages(showScore(), Char.charImage()));
-    }
-
-    /// Checker functions ///
-    // checks to see if block above Char is a solid block
-    public static boolean upCheck() {
-        int checkx = Char.charPos().x;
-        int checky = Char.charPos().y - CELLSIZE;
-        RectangleImage gray = new RectangleImage(new Posn(checkx, checky), CELLSIZE, CELLSIZE, Color.gray);
-        RectangleImage darkGray = new RectangleImage(new Posn(checkx, checky), CELLSIZE, CELLSIZE, Color.darkGray);
-        return (worldArray.contains(gray) || worldArray.contains(darkGray));
-    }
-
-    // checks to see if block left of Char is a solid block
-    public static boolean leftCheck() {
-        int checkx = Char.charPos().x - CELLSIZE;
-        int checky = Char.charPos().y;
-        RectangleImage gray = new RectangleImage(new Posn(checkx, checky), CELLSIZE, CELLSIZE, Color.gray);
-        RectangleImage darkGray = new RectangleImage(new Posn(checkx, checky), CELLSIZE, CELLSIZE, Color.darkGray);
-        return (worldArray.contains(gray) || worldArray.contains(darkGray));
-    }
-
-    // checks to see if block below Char is a solid block
-    public static boolean downCheck() {
-        int checkx = Char.charPos().x;
-        int checky = Char.charPos().y + CELLSIZE;
-        RectangleImage gray = new RectangleImage(new Posn(checkx, checky), CELLSIZE, CELLSIZE, Color.gray);
-        RectangleImage darkGray = new RectangleImage(new Posn(checkx, checky), CELLSIZE, CELLSIZE, Color.darkGray);
-        return (worldArray.contains(gray) || worldArray.contains(darkGray));
-    }
-
-    // checks to see if block right of Char is a solid block
-    public static boolean rightCheck() {
-        int checkx = Char.charPos().x + CELLSIZE;
-        int checky = Char.charPos().y;
-        RectangleImage gray = new RectangleImage(new Posn(checkx, checky), CELLSIZE, CELLSIZE, Color.gray);
-        RectangleImage darkGray = new RectangleImage(new Posn(checkx, checky), CELLSIZE, CELLSIZE, Color.darkGray);
-        return (worldArray.contains(gray) || worldArray.contains(darkGray));
     }
 
     /// Auxiliary functions ///
@@ -204,9 +405,15 @@ public class Game1 extends World {
     }
 
     public WorldImage showScore() {
-        return new TextImage(new Posn(200, 60), "You have blocked: " + movements + " times!", 20, Color.white);
+        return new OverlayImages(new TextImage(new Posn(WIDTH / 2, 40), "You can beat this level in fewer than " + pathArray.size() + " moves!", 20, Color.white),
+                new TextImage(new Posn(WIDTH / 2, 65), "You have moved: " + movements + " times!", 20, Color.white));
     }
 
+    /// Tester functions ///
+
+    /*
+     more to come!
+     */
     /// Game worlds functions ///
     public Game1(WorldImage uni) {
         super();
@@ -219,12 +426,10 @@ public class Game1 extends World {
 
     public void onKeyEvent(String key) {
         Char.move(key);
-
     }
 
     public WorldImage makeImage() {
         return buildWorld(); // returns everything in worldArray
-
     }
 
     public static void main(String[] args) {
