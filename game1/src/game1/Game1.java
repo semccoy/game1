@@ -222,7 +222,7 @@ public class Game1 extends World {
         public static RectangleImage rightNeighbor() {
             return new RectangleImage(new Posn(moverPos().x + CELLSIZE, moverPos().y), CELLSIZE, CELLSIZE, Color.yellow);
         }
-    } //
+    }
 
     /// Path solving functions ///
     // starts in same place as Char does to solve optimal path from your pov
@@ -231,31 +231,30 @@ public class Game1 extends World {
     private static ArrayList<RectangleImage> pathArray = new ArrayList<RectangleImage>();
     private static ArrayList<RectangleImage> tempPaths = new ArrayList<RectangleImage>();
 
-    // call this in buildWorld
     public static void pathGen() {
         patherDirectionalChecker(); // tempPaths now holds all valid next-squares (non-solids and non-just-moved-froms)
         int direction = randomInt(0, tempPaths.size() - 1); // picks an integer that corresponds with the direction of next movement
-        pathArray.add(tempPaths.get(direction)); // add that square to pathArray, that's where we're going next -- up to here works
+        pathArray.add(tempPaths.get(direction)); // add that square to pathArray, that's where we're going next
         tempPaths.clear(); // clears tempPaths so it can be used again upon recurring
         RectangleImage ultimate = pathArray.get(pathArray.size() - 1); // last thing in pathArray
         RectangleImage penultimate = pathArray.get(pathArray.size() - 2); // second last thing in pathArray
         int dx = (ultimate.pinhole.x - penultimate.pinhole.x) / CELLSIZE; // how we figure out which direction we just went
         int dy = (ultimate.pinhole.y - penultimate.pinhole.y) / CELLSIZE; // how we figure out which direction we just went
         int distToUpWall = (ultimate.pinhole.y - 160) / 40;
-        int distToLeftWall = (ultimate.pinhole.x - 200) / 40;
+        int distToLeftWall = (ultimate.pinhole.x - 240) / 40;
         int distToDownWall = (600 - ultimate.pinhole.y) / 40;
-        int distToRightWall = (1160 - ultimate.pinhole.x) / 40;
+        int distToRightWall = (1160 - ultimate.pinhole.x) / 40; // -- up to here works
 
         if (dy < 0) {
             int reps = randomInt(0, distToUpWall);
             int counter = 0;
             while (counter < reps) {
-                pathArray.add(new RectangleImage(new Posn(ultimate.pinhole.x, ultimate.pinhole.y + dy), CELLSIZE, CELLSIZE, Color.yellow));
+                pathArray.add(new RectangleImage(new Posn(ultimate.pinhole.x, ultimate.pinhole.y + dy * CELLSIZE), CELLSIZE, CELLSIZE, Color.yellow));
                 ultimate = pathArray.get(pathArray.size() - 1);
                 counter++;
             }
             if (ultimate.pinhole.y > 160) {
-                addRock(ultimate.pinhole.x / CELLSIZE, ultimate.pinhole.y / CELLSIZE - 1);
+                addRock((ultimate.pinhole.x - upperleft.x) / CELLSIZE - 1, (ultimate.pinhole.y - upperleft.y) / CELLSIZE - 1);
             }
         }
 
@@ -263,12 +262,12 @@ public class Game1 extends World {
             int reps = randomInt(0, distToLeftWall);
             int counter = 0;
             while (counter < reps) {
-                pathArray.add(new RectangleImage(new Posn(ultimate.pinhole.x + dx, ultimate.pinhole.y), CELLSIZE, CELLSIZE, Color.yellow));
+                pathArray.add(new RectangleImage(new Posn(ultimate.pinhole.x + dx * CELLSIZE, ultimate.pinhole.y), CELLSIZE, CELLSIZE, Color.yellow));
                 ultimate = pathArray.get(pathArray.size() - 1);
                 counter++;
             }
             if (ultimate.pinhole.x > 240) {
-                addRock(ultimate.pinhole.x / CELLSIZE - 1, ultimate.pinhole.y / CELLSIZE);
+                addRock((ultimate.pinhole.x - upperleft.x) / CELLSIZE - 1, (ultimate.pinhole.y - upperleft.y) / CELLSIZE - 1);
             }
         }
 
@@ -276,12 +275,12 @@ public class Game1 extends World {
             int reps = randomInt(0, distToDownWall);
             int counter = 0;
             while (counter < reps) {
-                pathArray.add(new RectangleImage(new Posn(ultimate.pinhole.x, ultimate.pinhole.y + dy), CELLSIZE, CELLSIZE, Color.yellow));
+                pathArray.add(new RectangleImage(new Posn(ultimate.pinhole.x, ultimate.pinhole.y + dy * CELLSIZE), CELLSIZE, CELLSIZE, Color.yellow));
                 ultimate = pathArray.get(pathArray.size() - 1);
                 counter++;
             }
             if (ultimate.pinhole.y < 600) {
-                addRock(ultimate.pinhole.x / CELLSIZE, ultimate.pinhole.y / CELLSIZE + 1);
+                addRock((ultimate.pinhole.x - upperleft.x) / CELLSIZE - 1, (ultimate.pinhole.y - upperleft.y) / CELLSIZE + 1);
             }
         }
 
@@ -289,20 +288,19 @@ public class Game1 extends World {
             int reps = randomInt(0, distToRightWall);
             int counter = 0;
             while (counter < reps) {
-                pathArray.add(new RectangleImage(new Posn(ultimate.pinhole.x + dx, ultimate.pinhole.y), CELLSIZE, CELLSIZE, Color.yellow));
+                pathArray.add(new RectangleImage(new Posn(ultimate.pinhole.x + dx * CELLSIZE, ultimate.pinhole.y), CELLSIZE, CELLSIZE, Color.yellow));
                 ultimate = pathArray.get(pathArray.size() - 1);
                 counter++;
             }
             if (ultimate.pinhole.x < 1160) {
-                addRock(ultimate.pinhole.x / CELLSIZE + 1, ultimate.pinhole.y / CELLSIZE);
+                addRock((ultimate.pinhole.x - upperleft.x) / CELLSIZE + 1, (ultimate.pinhole.y - upperleft.y) / CELLSIZE - 1);
             }
         }
-        
-        //pather = new Mover(ultimate.pinhole.x, ultimate.pinhole.y);
+
+        pather = new Mover(ultimate.pinhole.x, ultimate.pinhole.y);
 
         // recur until cannot move any more
         // solver can then follow the "yellow" path (invisible to player)
-        
         System.out.println("pathGen is ok");
 
     }
@@ -375,6 +373,13 @@ public class Game1 extends World {
         for (int i = 0; i < worldArray.size(); i++) {
             RectangleImage temp = worldArray.get(i);
             newscene = new OverlayImages(newscene, temp);
+        }
+        
+        // will update this to do "if (mode = SOLVERMODE) { show this part} else {don't}"
+        // so user doesn't ever see the yellow
+        for (int i = 0; i < pathArray.size(); i++) {
+            RectangleImage path = pathArray.get(i);
+            newscene = new OverlayImages(newscene, path);
         }
 
         return new OverlayImages(newscene,
