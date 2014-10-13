@@ -121,68 +121,37 @@ public class Game1 extends World {
             return new Posn(moverx, movery);
         }
 
-//        public static void move(String key) {
-//            if ((key.equals("up") || key.equals("w")) && !upCheck()) {
-//                while (!upCheck()) {
-//                    movery = movery - CELLSIZE;
-//                }
-//                movements++;
-//            } else if ((key.equals("left") || key.equals("a")) && !leftCheck()) {
-//                while (!leftCheck()) {
-//                    moverx = moverx - CELLSIZE;
-//                }
-//                movements++;
-//            } else if ((key.equals("down") || key.equals("s")) && !downCheck()) {
-//                while (!downCheck()) {
-//                    movery = movery + CELLSIZE;
-//                }
-//                movements++;
-//            } else if ((key.equals("right") || key.equals("d")) && !rightCheck()) {
-//                while (!rightCheck()) {
-//                    moverx = moverx + CELLSIZE;
-//                }
-//                movements++;
-//            }
-//        }
-        /// Checker functions ///
-        // checks to see if block above Char is a solid block or was just moved to ("is yellow")
+        /// Checker functions /// - return true if block in given direction is wall or rock
         public static boolean upCheck() {
             int checkx = Mover.moverPos().x;
             int checky = Mover.moverPos().y - CELLSIZE;
             RectangleImage gray = new RectangleImage(new Posn(checkx, checky), CELLSIZE, CELLSIZE, Color.gray);
             RectangleImage darkGray = new RectangleImage(new Posn(checkx, checky), CELLSIZE, CELLSIZE, Color.darkGray);
-            RectangleImage yellow = new RectangleImage(new Posn(checkx, checky), CELLSIZE, CELLSIZE, Color.yellow);
-            return (worldArray.contains(gray) || worldArray.contains(darkGray) || pathArray.contains(yellow) || tempPaths.contains(yellow));
+            return (worldArray.contains(gray) || worldArray.contains(darkGray));
         }
 
-        // checks to see if block left of Mover is a solid block or was just moved to ("is yellow")
         public static boolean leftCheck() {
             int checkx = Mover.moverPos().x - CELLSIZE;
             int checky = Mover.moverPos().y;
             RectangleImage gray = new RectangleImage(new Posn(checkx, checky), CELLSIZE, CELLSIZE, Color.gray);
             RectangleImage darkGray = new RectangleImage(new Posn(checkx, checky), CELLSIZE, CELLSIZE, Color.darkGray);
-            RectangleImage yellow = new RectangleImage(new Posn(checkx, checky), CELLSIZE, CELLSIZE, Color.yellow);
-            return (worldArray.contains(gray) || worldArray.contains(darkGray) || pathArray.contains(yellow) || tempPaths.contains(yellow));
+            return (worldArray.contains(gray) || worldArray.contains(darkGray));
         }
 
-        // checks to see if block below Mover is a solid block or was just moved to ("is yellow")
         public static boolean downCheck() {
             int checkx = Mover.moverPos().x;
             int checky = Mover.moverPos().y + CELLSIZE;
             RectangleImage gray = new RectangleImage(new Posn(checkx, checky), CELLSIZE, CELLSIZE, Color.gray);
             RectangleImage darkGray = new RectangleImage(new Posn(checkx, checky), CELLSIZE, CELLSIZE, Color.darkGray);
-            RectangleImage yellow = new RectangleImage(new Posn(checkx, checky), CELLSIZE, CELLSIZE, Color.yellow);
-            return (worldArray.contains(gray) || worldArray.contains(darkGray) || pathArray.contains(yellow) || tempPaths.contains(yellow));
+            return (worldArray.contains(gray) || worldArray.contains(darkGray));
         }
 
-        // checks to see if block right of Mover is a solid block or was just moved to ("is yellow")
         public static boolean rightCheck() {
             int checkx = Mover.moverPos().x + CELLSIZE;
             int checky = Mover.moverPos().y;
             RectangleImage gray = new RectangleImage(new Posn(checkx, checky), CELLSIZE, CELLSIZE, Color.gray);
             RectangleImage darkGray = new RectangleImage(new Posn(checkx, checky), CELLSIZE, CELLSIZE, Color.darkGray);
-            RectangleImage yellow = new RectangleImage(new Posn(checkx, checky), CELLSIZE, CELLSIZE, Color.yellow);
-            return (worldArray.contains(gray) || worldArray.contains(darkGray) || pathArray.contains(yellow) || tempPaths.contains(yellow));
+            return (worldArray.contains(gray) || worldArray.contains(darkGray));
         }
 
         public static WorldImage moverImage() {
@@ -214,118 +183,122 @@ public class Game1 extends World {
     private static ArrayList<RectangleImage> tempPaths = new ArrayList<RectangleImage>();
 
     public static void pathGen() {
-        int goalx = 0, goaly = 0;
-        for (int i = 0; i < 5; i++) {
-            // while (canMove()) {
-            patherDirectionalChecker(); // tempPaths now holds all valid next-squares (non-solids and non-just-moved-froms)
+        while (canMove()) {
+            patherDirectionalChecker(); // tempPaths holds all squares in non-rock, non-wall directions (so it can include where you just were)
             int direction = randomInt(0, tempPaths.size() - 1); // picks an integer that corresponds with the direction of next movement
-            pathArray.add(tempPaths.get(direction)); // add that square to pathArray, that's where we're going next
-            RectangleImage ultimate = pathArray.get(pathArray.size() - 1); // last thing in pathArray
-            RectangleImage penultimate = pathArray.get(pathArray.size() - 2); // second last thing in pathArray
-            int dx = (ultimate.pinhole.x - penultimate.pinhole.x) / CELLSIZE; // how we figure out which direction we just went
-            int dy = (ultimate.pinhole.y - penultimate.pinhole.y) / CELLSIZE; // how we figure out which direction we just went
-            int distToUpWall = (ultimate.pinhole.y - 160) / CELLSIZE;
-            int distToLeftWall = (ultimate.pinhole.x - 240) / CELLSIZE;
-            int distToDownWall = (640 - ultimate.pinhole.y) / CELLSIZE;
-            int distToRightWall = (1200 - ultimate.pinhole.x) / CELLSIZE;
+            if (pathArray.contains(tempPaths.get(direction))) { // if that square was already moved to, cant go there again
+                pathGen();
+            } else {
+                pathArray.add(tempPaths.get(direction)); // else add that square to pathArray, that's where we're going next
+                RectangleImage ultimate = pathArray.get(pathArray.size() - 1); // last thing in pathArray
+                RectangleImage penultimate = pathArray.get(pathArray.size() - 2); // second last thing in pathArray
 
-            if (dy < 0) {
-                int reps = randomInt(0, distToUpWall);
-                RectangleImage rockToBe = new RectangleImage(new Posn(ultimate.pinhole.x, ultimate.pinhole.y + dy * CELLSIZE * (reps + 1)), CELLSIZE, CELLSIZE, Color.yellow);
-                while (pathArray.contains(rockToBe)) { // ideally prevents it from putting a rock in an existing path
-                    reps = randomInt(0, distToUpWall);
-                    rockToBe = new RectangleImage(new Posn(ultimate.pinhole.x, ultimate.pinhole.y + dy * CELLSIZE * (reps + 1)), CELLSIZE, CELLSIZE, Color.yellow);
+                int dx = (ultimate.pinhole.x - penultimate.pinhole.x) / CELLSIZE; // how we figure out which direction we just went
+                int dy = (ultimate.pinhole.y - penultimate.pinhole.y) / CELLSIZE; // how we figure out which direction we just went
+                int distToUpWall = (ultimate.pinhole.y - 160) / CELLSIZE;
+                int distToLeftWall = (ultimate.pinhole.x - 240) / CELLSIZE;
+                int distToDownWall = (640 - ultimate.pinhole.y) / CELLSIZE;
+                int distToRightWall = (1200 - ultimate.pinhole.x) / CELLSIZE;
+
+                if (dy < 0) {
+                    int reps = randomInt(0, distToUpWall);
+                    RectangleImage rockToBe = new RectangleImage(new Posn(ultimate.pinhole.x, ultimate.pinhole.y + dy * CELLSIZE * (reps + 1)), CELLSIZE, CELLSIZE, Color.yellow);
+                    while (pathArray.contains(rockToBe)) { // ideally prevents it from putting a rock in an existing path
+                        reps = randomInt(0, distToUpWall);
+                        rockToBe = new RectangleImage(new Posn(ultimate.pinhole.x, ultimate.pinhole.y + dy * CELLSIZE * (reps + 1)), CELLSIZE, CELLSIZE, Color.yellow);
+                    }
+                    RectangleImage nextPath = new RectangleImage(new Posn(ultimate.pinhole.x, ultimate.pinhole.y + dy * CELLSIZE), CELLSIZE, CELLSIZE, Color.yellow);
+                    int counter = 0;
+                    while (counter < reps) {
+                        pathArray.add(nextPath);
+                        ultimate = pathArray.get(pathArray.size() - 1);
+                        pather = new Mover(ultimate.pinhole.x, ultimate.pinhole.y);
+                        counter++;
+                    }
+                    if (ultimate.pinhole.y > 160) {
+                        int distToWallX = (ultimate.pinhole.x - upperleft.x) / CELLSIZE;
+                        int distToWallY = (ultimate.pinhole.y - upperleft.y) / CELLSIZE;
+                        addRock(distToWallX - 1, distToWallY - 2);
+                    }
                 }
-                RectangleImage nextPath = new RectangleImage(new Posn(ultimate.pinhole.x, ultimate.pinhole.y + dy * CELLSIZE), CELLSIZE, CELLSIZE, Color.yellow);
-                int counter = 0;
-                while (counter < reps) {
-                    pathArray.add(nextPath);
-                    ultimate = pathArray.get(pathArray.size() - 1);
-                    counter++;
+
+                if (dx < 0) {
+                    int reps = randomInt(0, distToLeftWall);
+                    RectangleImage rockToBe = new RectangleImage(new Posn(ultimate.pinhole.x + dx * CELLSIZE * (reps + 1), ultimate.pinhole.y), CELLSIZE, CELLSIZE, Color.yellow);
+                    while (pathArray.contains(rockToBe)) {
+                        reps = randomInt(0, distToLeftWall);
+                        rockToBe = new RectangleImage(new Posn(ultimate.pinhole.x + dx * CELLSIZE * (reps + 1), ultimate.pinhole.y), CELLSIZE, CELLSIZE, Color.yellow);
+                    }
+                    RectangleImage nextPath = new RectangleImage(new Posn(ultimate.pinhole.x + dx * CELLSIZE, ultimate.pinhole.y), CELLSIZE, CELLSIZE, Color.yellow);
+                    int counter = 0;
+                    while (counter < reps) {
+                        pathArray.add(nextPath);
+                        ultimate = pathArray.get(pathArray.size() - 1);
+                        pather = new Mover(ultimate.pinhole.x, ultimate.pinhole.y);
+                        counter++;
+                    }
+                    if (ultimate.pinhole.x > 240) {
+                        int distToWallX = (ultimate.pinhole.x - upperleft.x) / CELLSIZE;
+                        int distToWallY = (ultimate.pinhole.y - upperleft.y) / CELLSIZE;
+                        addRock(distToWallX - 2, distToWallY - 1);
+                    }
                 }
-                if (ultimate.pinhole.y > 160) {
-                    int distToWallX = (ultimate.pinhole.x - upperleft.x) / CELLSIZE;
-                    int distToWallY = (ultimate.pinhole.y - upperleft.y) / CELLSIZE;
-                    addRock(distToWallX - 1, distToWallY - 2);
+
+                if (dy > 0) {
+                    int reps = randomInt(0, distToDownWall);
+                    RectangleImage rockToBe = new RectangleImage(new Posn(ultimate.pinhole.x, ultimate.pinhole.y + dy * CELLSIZE * (reps + 1)), CELLSIZE, CELLSIZE, Color.yellow);
+                    while (pathArray.contains(rockToBe)) {
+                        reps = randomInt(0, distToDownWall);
+                        rockToBe = new RectangleImage(new Posn(ultimate.pinhole.x, ultimate.pinhole.y + dy * CELLSIZE * (reps + 1)), CELLSIZE, CELLSIZE, Color.yellow);
+                    }
+                    RectangleImage nextPath = new RectangleImage(new Posn(ultimate.pinhole.x, ultimate.pinhole.y + dy * CELLSIZE), CELLSIZE, CELLSIZE, Color.yellow);
+                    int counter = 0;
+                    while (counter < reps) {
+                        pathArray.add(nextPath);
+                        ultimate = pathArray.get(pathArray.size() - 1);
+                        pather = new Mover(ultimate.pinhole.x, ultimate.pinhole.y);
+                        counter++;
+                    }
+                    if (ultimate.pinhole.y < 640) {
+                        int distToWallX = (ultimate.pinhole.x - upperleft.x) / CELLSIZE;
+                        int distToWallY = (ultimate.pinhole.y - upperleft.y) / CELLSIZE;
+                        addRock(distToWallX - 1, distToWallY);
+                    }
                 }
+
+                if (dx > 0) {
+                    int reps = randomInt(0, distToRightWall);
+                    RectangleImage rockToBe = new RectangleImage(new Posn(ultimate.pinhole.x + dx * CELLSIZE * (reps + 1), ultimate.pinhole.y), CELLSIZE, CELLSIZE, Color.yellow);
+                    while (pathArray.contains(rockToBe)) {
+                        reps = randomInt(0, distToRightWall);
+                        rockToBe = new RectangleImage(new Posn(ultimate.pinhole.x + dx * CELLSIZE * (reps + 1), ultimate.pinhole.y), CELLSIZE, CELLSIZE, Color.yellow);
+                    }
+                    RectangleImage nextPath = new RectangleImage(new Posn(ultimate.pinhole.x + dx * CELLSIZE, ultimate.pinhole.y), CELLSIZE, CELLSIZE, Color.yellow);
+                    int counter = 0;
+                    while (counter < reps) {
+                        pathArray.add(nextPath);
+                        ultimate = pathArray.get(pathArray.size() - 1);
+                        pather = new Mover(ultimate.pinhole.x, ultimate.pinhole.y);
+                        counter++;
+                    }
+                    if (ultimate.pinhole.x < 1200) {
+                        int distToWallX = (ultimate.pinhole.x - upperleft.x) / CELLSIZE;
+                        int distToWallY = (ultimate.pinhole.y - upperleft.y) / CELLSIZE;
+                        addRock(distToWallX, distToWallY - 1);
+                    }
+                }
+
+                pather = new Mover(ultimate.pinhole.x, ultimate.pinhole.y);
+                tempPaths.clear(); // clears tempPaths so it can be used again upon recurring
+                minMovements++;
+                System.out.println("pathGen is ok");
             }
 
-            if (dx < 0) {
-                int reps = randomInt(0, distToLeftWall);
-                RectangleImage rockToBe = new RectangleImage(new Posn(ultimate.pinhole.x + dx * CELLSIZE * (reps + 1), ultimate.pinhole.y), CELLSIZE, CELLSIZE, Color.yellow);
-                while (pathArray.contains(rockToBe)) {
-                    reps = randomInt(0, distToLeftWall);
-                    rockToBe = new RectangleImage(new Posn(ultimate.pinhole.x + dx * CELLSIZE * (reps + 1), ultimate.pinhole.y), CELLSIZE, CELLSIZE, Color.yellow);
-                }
-                RectangleImage nextPath = new RectangleImage(new Posn(ultimate.pinhole.x + dx * CELLSIZE, ultimate.pinhole.y), CELLSIZE, CELLSIZE, Color.yellow);
-                int counter = 0;
-                while (counter < reps) {
-                    pathArray.add(nextPath);
-                    ultimate = pathArray.get(pathArray.size() - 1);
-                    counter++;
-                }
-                if (ultimate.pinhole.x > 240) {
-                    int distToWallX = (ultimate.pinhole.x - upperleft.x) / CELLSIZE;
-                    int distToWallY = (ultimate.pinhole.y - upperleft.y) / CELLSIZE;
-                    addRock(distToWallX - 2, distToWallY - 1);
-                }
-            }
-
-            if (dy > 0) {
-                int reps = randomInt(0, distToDownWall);
-                RectangleImage rockToBe = new RectangleImage(new Posn(ultimate.pinhole.x, ultimate.pinhole.y + dy * CELLSIZE * (reps + 1)), CELLSIZE, CELLSIZE, Color.yellow);
-                while (pathArray.contains(rockToBe)) {
-                    reps = randomInt(0, distToDownWall);
-                    rockToBe = new RectangleImage(new Posn(ultimate.pinhole.x, ultimate.pinhole.y + dy * CELLSIZE * (reps + 1)), CELLSIZE, CELLSIZE, Color.yellow);
-                }
-                RectangleImage nextPath = new RectangleImage(new Posn(ultimate.pinhole.x, ultimate.pinhole.y + dy * CELLSIZE), CELLSIZE, CELLSIZE, Color.yellow);
-                int counter = 0;
-                while (counter < reps) {
-                    pathArray.add(nextPath);
-                    ultimate = pathArray.get(pathArray.size() - 1);
-                    counter++;
-                }
-                if (ultimate.pinhole.y < 640) {
-                    int distToWallX = (ultimate.pinhole.x - upperleft.x) / CELLSIZE;
-                    int distToWallY = (ultimate.pinhole.y - upperleft.y) / CELLSIZE;
-                    addRock(distToWallX - 1, distToWallY);
-                }
-            }
-
-            if (dx > 0) {
-                int reps = randomInt(0, distToRightWall);
-                RectangleImage rockToBe = new RectangleImage(new Posn(ultimate.pinhole.x + dx * CELLSIZE * (reps + 1), ultimate.pinhole.y), CELLSIZE, CELLSIZE, Color.yellow);
-                while (pathArray.contains(rockToBe)) {
-                    reps = randomInt(0, distToRightWall);
-                    rockToBe = new RectangleImage(new Posn(ultimate.pinhole.x + dx * CELLSIZE * (reps + 1), ultimate.pinhole.y), CELLSIZE, CELLSIZE, Color.yellow);
-                }
-                RectangleImage nextPath = new RectangleImage(new Posn(ultimate.pinhole.x + dx * CELLSIZE, ultimate.pinhole.y), CELLSIZE, CELLSIZE, Color.yellow);
-                int counter = 0;
-                while (counter < reps) {
-                    pathArray.add(nextPath);
-                    ultimate = pathArray.get(pathArray.size() - 1);
-                    counter++;
-                }
-                if (ultimate.pinhole.x < 1200) {
-                    int distToWallX = (ultimate.pinhole.x - upperleft.x) / CELLSIZE;
-                    int distToWallY = (ultimate.pinhole.y - upperleft.y) / CELLSIZE;
-                    addRock(distToWallX, distToWallY - 1);
-                }
-            }
-
-            pather = new Mover(ultimate.pinhole.x, ultimate.pinhole.y);
-            goalx = ultimate.pinhole.x / CELLSIZE;
-            goaly = ultimate.pinhole.y / CELLSIZE;
-            tempPaths.clear(); // clears tempPaths so it can be used again upon recurring
-            minMovements++;
-            System.out.println("pathGen is ok");
-        }
-
-        addGoal(goalx, goaly);
-
+//        addGoal(goalx, goaly);
 //        if (minMovements < 8) { // prevents the game from being like 4 moves long
 //             restart game
 //        }
+        }
     }
 
     public static void patherDirectionalChecker() {
@@ -437,6 +410,9 @@ public class Game1 extends World {
                 new TextImage(new Posn(WIDTH / 2, 65), "You have moved: " + movements + " times!", 20, Color.white));
     }
 
+//    public boolean gameOver() {
+//       // if pather coords are goal coords, you win
+//    }
     /// Tester functions ///
 
     /*
