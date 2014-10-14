@@ -305,7 +305,6 @@ public class Game1 extends World {
             goalx = (ultimate.pinhole.x - upperleft.x) / CELLSIZE - 1;
             goaly = (ultimate.pinhole.y - upperleft.y) / CELLSIZE - 1;
             System.out.println("pathGen is ok");
-
         }
     }
 
@@ -373,6 +372,12 @@ public class Game1 extends World {
     public static void setGoal() {
         endx = (pathArray.get(pathArray.size() - 1).pinhole.x - upperleft.x) / CELLSIZE - 1;
         endy = (pathArray.get(pathArray.size() - 1).pinhole.y - upperleft.y) / CELLSIZE - 1;
+        if (endx ==0 && endy ==0) {
+            pathArray.clear();
+            tempPaths.clear();
+            pathGen();
+            setGoal();
+        }
     }
 
     public static ArrayList<RectangleImage> allTheSmallThings() {
@@ -392,7 +397,7 @@ public class Game1 extends World {
             RectangleImage temp = worldArray.get(i);
             newscene = new OverlayImages(newscene, temp);
         }
-//        // comment out this block to see goal
+//        // uncomment this block to see optimal path
 //        for (int i = 0; i < pathArray.size(); i++) {
 //            RectangleImage path = pathArray.get(i);
 //            newscene = new OverlayImages(newscene, path);
@@ -424,6 +429,10 @@ public class Game1 extends World {
         this.universe = uni;
     }
 
+    public WorldImage makeImage() {
+        return buildWorld(); // returns everything in worldArray
+    }
+
     public void onTick() {
         if (Char.onGoal()) {
             thisIsTheEnd = true;
@@ -432,15 +441,19 @@ public class Game1 extends World {
         }
     }
 
+    public void onKeyEvent(String key) {
+        Char.move(key);
+    }
+
     public WorldEnd worldEnds() {
         String winText;
         if (thisIsTheEnd) {
             if (movements <= minMovements) {
-                winText = "Great job! You moved " + movements + " times!";
+                winText = "Great job! It only took you " + movements + " moves!";
             } else if (movements <= (minMovements + 10)) {
-                winText = "Not bad! You moved " + movements + " times.";
+                winText = "Not bad! You made " + movements + " moves.";
             } else {
-                winText = "What are you doing?? What exactly took " + movements + " moves?";
+                winText = "What are you doing?? What took you " + movements + " moves?";
             }
             return new WorldEnd(true, new OverlayImages(this.makeImage(),
                     new TextImage(new Posn(WIDTH / 2, HEIGHT / 2), winText, 40, Color.white)));
@@ -449,16 +462,8 @@ public class Game1 extends World {
         }
     }
 
-    public void onKeyEvent(String key) {
-        Char.move(key);
-    }
-
-    public WorldImage makeImage() {
-        return buildWorld(); // returns everything in worldArray
-    }
-
     public static void main(String[] args) {
-        allTheSmallThings(); // populates worldArray
+        allTheSmallThings();
         System.out.println("ok ");
         Game1 game = new Game1(universe);
         game.bigBang(WIDTH, HEIGHT, .1);
