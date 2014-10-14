@@ -9,6 +9,7 @@ import java.util.*;
 public class Game1 extends World {
 
     static int goalx, goaly;
+    static int endx, endy;
     static int WIDTH = 1440;
     static int HEIGHT = 800;
     static int CELLSIZE = 40;
@@ -66,6 +67,10 @@ public class Game1 extends World {
             }
         }
 
+        public static boolean onGoal() {
+            return (Char.charPos().x - upperleft.x) / CELLSIZE - 1 == endx && (Char.charPos().y - upperleft.y) / CELLSIZE - 1 == endy;
+        }
+
         // checks to see if blocks around char are solid
         public static boolean upCheck() {
             int checkx = Char.charPos().x;
@@ -120,12 +125,6 @@ public class Game1 extends World {
 
         public static WorldImage moverImage() {
             return new RectangleImage(moverPos(), CELLSIZE, CELLSIZE, Color.yellow);
-        }
-
-        public static boolean moverOnGoal() {
-            int xWant = goalx;
-            int yWant = goaly;
-            return (((Mover.moverPos().x - upperleft.x) / CELLSIZE) - 1 == xWant && ((Mover.moverPos().y - upperleft.y) / CELLSIZE) - 1 == yWant);
         }
 
         // checks to see if blocks around mover (block of interest) solid or just-moved-from
@@ -306,8 +305,10 @@ public class Game1 extends World {
         goalx = (ultimate.pinhole.x - upperleft.x) / CELLSIZE - 1;
         goaly = (ultimate.pinhole.y - upperleft.y) / CELLSIZE - 1;
         System.out.println("pathGen is ok");
-        System.out.println(goalx + " " + (((Mover.moverPos().x - upperleft.x) / CELLSIZE) - 1));
-        System.out.println(goaly + " " + (((Mover.moverPos().y - upperleft.y) / CELLSIZE) - 1));
+        System.out.println(goalx + " " + (((Char.charPos().x - upperleft.x) / CELLSIZE) - 1));
+        System.out.println(goaly + " " + (((Char.charPos().y - upperleft.y) / CELLSIZE) - 1));
+        System.out.println(endx + "endx");
+        System.out.println(endy + "endy");
 
     }//}
 
@@ -372,11 +373,17 @@ public class Game1 extends World {
         }
     }
 
+    public static void setGoal() {
+        endx = (pathArray.get(pathArray.size() - 1).pinhole.x - upperleft.x) / CELLSIZE - 1;
+        endy = (pathArray.get(pathArray.size() - 1).pinhole.y - upperleft.y) / CELLSIZE - 1;
+    }
+
     public static ArrayList<RectangleImage> allTheSmallThings() {
         pathStart();
         addBackground();
         pathGen();
         addBlock(goalx, goaly, Color.cyan);
+        setGoal();
 //        addConfusion();
         worldArray.trimToSize();
         return worldArray;
@@ -437,7 +444,7 @@ public class Game1 extends World {
     }
 
     public void onTick() {
-        if (Mover.moverOnGoal()) {
+        if (Char.onGoal()) {
             thisIsTheEnd = true;
         } else {
             buildWorld();
@@ -446,8 +453,8 @@ public class Game1 extends World {
 
     public WorldEnd worldEnds() {
         if (thisIsTheEnd) {
-            return new WorldEnd(true, new OverlayImages(this.makeImage(),
-                    new TextImage(new Posn(WIDTH / 2, HEIGHT / 2), ("Great job! You moved " + movements + " times!"), 16, Color.white)));
+            return new WorldEnd(true, new OverlayImages(winScreen(universe),
+                    new TextImage(new Posn(WIDTH / 2, HEIGHT / 2), ("Great job! You moved " + movements + " times!"), 40, Color.white)));
         } else {
             return new WorldEnd(false, this.makeImage());
         }
@@ -463,9 +470,9 @@ public class Game1 extends World {
 
     public static void main(String[] args) {
         allTheSmallThings(); // populates worldArray
-        System.out.println("ok " + thisIsTheEnd);
+        System.out.println("ok ");
         Game1 game = new Game1(universe);
-        game.bigBang(WIDTH, HEIGHT);
+        game.bigBang(WIDTH, HEIGHT, .1);
     }
 }
 
