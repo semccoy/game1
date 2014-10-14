@@ -8,29 +8,30 @@ import java.util.*;
 
 public class Game1 extends World {
 
-    // clean these up later
     static int WIDTH = 1440;
     static int HEIGHT = 800;
-    static int OFFSET = 8;
-    static int BACKWIDTH = (OFFSET - 2) * WIDTH / OFFSET;
-    static int BACKHEIGHT = (OFFSET - 2) * HEIGHT / OFFSET;
     static int CELLSIZE = 40;
-    static int CELLSWIDE = BACKWIDTH / CELLSIZE;
-    static int CELLSHIGH = BACKHEIGHT / CELLSIZE;
+    static int CELLSWIDE = 27;
+    static int CELLSHIGH = 15;
     static int movements = 0;
     static int minMovements = 0;
-    static Posn base = new Posn(WIDTH / 2, HEIGHT / 2);
-    static Posn upperleft = new Posn(200, 120);
+    static int goalx, goaly = 0;
+    static boolean thisIsTheEnd;
     static Random rand = new Random();
+    static Posn upperleft = new Posn(200, 120);
+    static Posn base = new Posn(WIDTH / 2, HEIGHT / 2);
+    static Mover pather = new Mover(Char.charPos().x, Char.charPos().y);
     public static WorldImage universe = new RectangleImage(base, WIDTH, HEIGHT, Color.black);
-    public static WorldImage background = new RectangleImage(base, BACKWIDTH, BACKHEIGHT, Color.lightGray);
+    public static WorldImage background = new RectangleImage(base, 1080, 600, Color.lightGray);
     public static RectangleImage start = new RectangleImage(new Posn(240, 160), CELLSIZE, CELLSIZE, Color.green);
     public static ArrayList<RectangleImage> worldArray = new ArrayList<RectangleImage>();
+    public static ArrayList<RectangleImage> pathArray = new ArrayList<RectangleImage>();
+    public static ArrayList<RectangleImage> tempPaths = new ArrayList<RectangleImage>();
 
     public static class Char {
 
-        static int charx = 240; // + randomInt(0,24) * CELLSIZE;
-        static int chary = 160; // + randomInt(0,12) * CELLSIZE;
+        static int charx = 240;
+        static int chary = 160;
 
         Char(int charx, int chary) {
             this.charx = charx;
@@ -65,8 +66,7 @@ public class Game1 extends World {
             }
         }
 
-        /// Checker functions ///
-        // checks to see if block above Char is a solid block
+        // checks to see if blocks around char are solid
         public static boolean upCheck() {
             int checkx = Char.charPos().x;
             int checky = Char.charPos().y - CELLSIZE;
@@ -75,7 +75,6 @@ public class Game1 extends World {
             return (worldArray.contains(gray) || worldArray.contains(darkGray));
         }
 
-        // checks to see if block left of Char is a solid block
         public static boolean leftCheck() {
             int checkx = Char.charPos().x - CELLSIZE;
             int checky = Char.charPos().y;
@@ -84,7 +83,6 @@ public class Game1 extends World {
             return (worldArray.contains(gray) || worldArray.contains(darkGray));
         }
 
-        // checks to see if block below Char is a solid block
         public static boolean downCheck() {
             int checkx = Char.charPos().x;
             int checky = Char.charPos().y + CELLSIZE;
@@ -93,7 +91,6 @@ public class Game1 extends World {
             return (worldArray.contains(gray) || worldArray.contains(darkGray));
         }
 
-        // checks to see if block right of Char is a solid block
         public static boolean rightCheck() {
             int checkx = Char.charPos().x + CELLSIZE;
             int checky = Char.charPos().y;
@@ -121,8 +118,7 @@ public class Game1 extends World {
             return new Posn(moverx, movery);
         }
 
-        /// Checker functions ///
-        // checks to see if block above Char is a solid block or was just moved to ("is yellow")
+        // checks to see if blocks around mover (block of interest) solid or just-moved-from
         public static boolean upCheck() {
             int checkx = Mover.moverPos().x;
             int checky = Mover.moverPos().y - CELLSIZE;
@@ -132,7 +128,6 @@ public class Game1 extends World {
             return (worldArray.contains(gray) || worldArray.contains(darkGray) || pathArray.contains(yellow));
         }
 
-        // checks to see if block left of Mover is a solid block or was just moved to ("is yellow")
         public static boolean leftCheck() {
             int checkx = Mover.moverPos().x - CELLSIZE;
             int checky = Mover.moverPos().y;
@@ -142,7 +137,6 @@ public class Game1 extends World {
             return (worldArray.contains(gray) || worldArray.contains(darkGray) || pathArray.contains(yellow));
         }
 
-        // checks to see if block below Mover is a solid block or was just moved to ("is yellow")
         public static boolean downCheck() {
             int checkx = Mover.moverPos().x;
             int checky = Mover.moverPos().y + CELLSIZE;
@@ -152,7 +146,6 @@ public class Game1 extends World {
             return (worldArray.contains(gray) || worldArray.contains(darkGray) || pathArray.contains(yellow));
         }
 
-        // checks to see if block right of Mover is a solid block or was just moved to ("is yellow")
         public static boolean rightCheck() {
             int checkx = Mover.moverPos().x + CELLSIZE;
             int checky = Mover.moverPos().y;
@@ -160,10 +153,6 @@ public class Game1 extends World {
             RectangleImage darkGray = new RectangleImage(new Posn(checkx, checky), CELLSIZE, CELLSIZE, Color.darkGray);
             RectangleImage yellow = new RectangleImage(new Posn(checkx, checky), CELLSIZE, CELLSIZE, Color.yellow);
             return (worldArray.contains(gray) || worldArray.contains(darkGray) || pathArray.contains(yellow));
-        }
-
-        public static WorldImage moverImage() {
-            return new RectangleImage(moverPos(), CELLSIZE, CELLSIZE, Color.yellow);
         }
 
         public static RectangleImage upNeighbor() {
@@ -181,44 +170,40 @@ public class Game1 extends World {
         public static RectangleImage rightNeighbor() {
             return new RectangleImage(new Posn(moverPos().x + CELLSIZE, moverPos().y), CELLSIZE, CELLSIZE, Color.yellow);
         }
+
+        public static WorldImage moverImage() {
+            return new RectangleImage(moverPos(), CELLSIZE, CELLSIZE, Color.yellow);
+        }
     }
 
-    /// Path solving functions ///
-    // starts in same place as Char does to solve optimal path from your pov
-    static Mover pather = new Mover(Char.charPos().x, Char.charPos().y);
-
-    private static ArrayList<RectangleImage> pathArray = new ArrayList<RectangleImage>();
-    private static ArrayList<RectangleImage> tempPaths = new ArrayList<RectangleImage>();
-
+    /// Pathing functions ///
     public static void pathGen() {
-//        int goalx = 0, goaly = 0;
         while (canMove()) {
-            patherDirectionalChecker(); // tempPaths now holds all valid next-squares (non-solids and non-just-moved-froms)
-            int direction = randomInt(0, tempPaths.size() - 1); // picks an integer that corresponds with the direction of next movement
-            pathArray.add(tempPaths.get(direction)); // add that square to pathArray, that's where we're going next
-            RectangleImage ultimate = pathArray.get(pathArray.size() - 1); // last thing in pathArray
-            RectangleImage penultimate = pathArray.get(pathArray.size() - 2); // second last thing in pathArray
-            int dx = (ultimate.pinhole.x - penultimate.pinhole.x) / CELLSIZE; // how we figure out which direction we just went
-            int dy = (ultimate.pinhole.y - penultimate.pinhole.y) / CELLSIZE; // how we figure out which direction we just went
+            patherDirectionalChecker();
+            int nextDirection = randomInt(0, tempPaths.size() - 1);
+            pathArray.add(tempPaths.get(nextDirection));
+            RectangleImage ultimate = pathArray.get(pathArray.size() - 1);
+            RectangleImage penultimate = pathArray.get(pathArray.size() - 2);
+            int dx = (ultimate.pinhole.x - penultimate.pinhole.x) / CELLSIZE;
+            int dy = (ultimate.pinhole.y - penultimate.pinhole.y) / CELLSIZE;
             int distToUpWall = (ultimate.pinhole.y - 160) / CELLSIZE;
             int distToLeftWall = (ultimate.pinhole.x - 240) / CELLSIZE;
             int distToDownWall = (640 - ultimate.pinhole.y) / CELLSIZE;
             int distToRightWall = (1200 - ultimate.pinhole.x) / CELLSIZE;
 
             if (dy < 0) {
-                int reps = Math.min(randomInt(0, distToUpWall), 4); // prevents game from being impossibly hard
+                int reps = Math.min(randomInt(0, distToUpWall), 4);
                 RectangleImage rockToBe = new RectangleImage(new Posn(ultimate.pinhole.x, ultimate.pinhole.y + dy * CELLSIZE * (reps + 1)), CELLSIZE, CELLSIZE, Color.yellow);
                 while (pathArray.contains(rockToBe)) {
                     reps = Math.min(randomInt(0, distToUpWall), 4);
                     rockToBe = new RectangleImage(new Posn(ultimate.pinhole.x, ultimate.pinhole.y + dy * CELLSIZE * (reps + 1)), CELLSIZE, CELLSIZE, Color.yellow);
                 }
-
                 int counter = 0;
                 while (counter < reps) {
                     RectangleImage nextPath = new RectangleImage(new Posn(ultimate.pinhole.x, ultimate.pinhole.y + dy * CELLSIZE), CELLSIZE, CELLSIZE, Color.yellow);
                     RectangleImage nextIsRock = new RectangleImage(new Posn(ultimate.pinhole.x, ultimate.pinhole.y + dy * CELLSIZE), CELLSIZE, CELLSIZE, Color.darkGray);
                     if (worldArray.contains(nextIsRock)) {
-                        addRock(nextIsRock.pinhole.x, nextIsRock.pinhole.y);
+                        addBlock(nextIsRock.pinhole.x, nextIsRock.pinhole.y, Color.darkGray);
                     } else {
                         pathArray.add(nextPath);
                         ultimate = pathArray.get(pathArray.size() - 1);
@@ -228,7 +213,7 @@ public class Game1 extends World {
                 if (ultimate.pinhole.y > 160) {
                     int distToWallX = (ultimate.pinhole.x - upperleft.x) / CELLSIZE;
                     int distToWallY = (ultimate.pinhole.y - upperleft.y) / CELLSIZE;
-                    addRock(distToWallX - 1, distToWallY - 2);
+                    addBlock(distToWallX - 1, distToWallY - 2, Color.darkGray);
                 }
             }
 
@@ -244,7 +229,7 @@ public class Game1 extends World {
                     RectangleImage nextPath = new RectangleImage(new Posn(ultimate.pinhole.x + dx * CELLSIZE, ultimate.pinhole.y), CELLSIZE, CELLSIZE, Color.yellow);
                     RectangleImage nextIsRock = new RectangleImage(new Posn(ultimate.pinhole.x + dx * CELLSIZE, ultimate.pinhole.y), CELLSIZE, CELLSIZE, Color.darkGray);
                     if (worldArray.contains(nextIsRock)) {
-                        addRock(nextIsRock.pinhole.x, nextIsRock.pinhole.y);
+                        addBlock(nextIsRock.pinhole.x, nextIsRock.pinhole.y, Color.darkGray);
                     } else {
                         pathArray.add(nextPath);
                         ultimate = pathArray.get(pathArray.size() - 1);
@@ -254,7 +239,7 @@ public class Game1 extends World {
                 if (ultimate.pinhole.x > 240) {
                     int distToWallX = (ultimate.pinhole.x - upperleft.x) / CELLSIZE;
                     int distToWallY = (ultimate.pinhole.y - upperleft.y) / CELLSIZE;
-                    addRock(distToWallX - 2, distToWallY - 1);
+                    addBlock(distToWallX - 2, distToWallY - 1, Color.darkGray);
                 }
             }
 
@@ -270,7 +255,7 @@ public class Game1 extends World {
                     RectangleImage nextPath = new RectangleImage(new Posn(ultimate.pinhole.x, ultimate.pinhole.y + dy * CELLSIZE), CELLSIZE, CELLSIZE, Color.yellow);
                     RectangleImage nextIsRock = new RectangleImage(new Posn(ultimate.pinhole.x, ultimate.pinhole.y + dy * CELLSIZE), CELLSIZE, CELLSIZE, Color.darkGray);
                     if (worldArray.contains(nextIsRock)) {
-                        addRock(nextIsRock.pinhole.x, nextIsRock.pinhole.y);
+                        addBlock(nextIsRock.pinhole.x, nextIsRock.pinhole.y, Color.darkGray);
                     } else {
                         pathArray.add(nextPath);
                         ultimate = pathArray.get(pathArray.size() - 1);
@@ -280,7 +265,7 @@ public class Game1 extends World {
                 if (ultimate.pinhole.y < 640) {
                     int distToWallX = (ultimate.pinhole.x - upperleft.x) / CELLSIZE;
                     int distToWallY = (ultimate.pinhole.y - upperleft.y) / CELLSIZE;
-                    addRock(distToWallX - 1, distToWallY);
+                    addBlock(distToWallX - 1, distToWallY, Color.darkGray);
                 }
             }
 
@@ -296,7 +281,7 @@ public class Game1 extends World {
                     RectangleImage nextPath = new RectangleImage(new Posn(ultimate.pinhole.x + dx * CELLSIZE, ultimate.pinhole.y), CELLSIZE, CELLSIZE, Color.yellow);
                     RectangleImage nextIsRock = new RectangleImage(new Posn(ultimate.pinhole.x + dx * CELLSIZE, ultimate.pinhole.y), CELLSIZE, CELLSIZE, Color.darkGray);
                     if (worldArray.contains(nextIsRock)) {
-                        addRock(nextIsRock.pinhole.x, nextIsRock.pinhole.y);
+                        addBlock(nextIsRock.pinhole.x, nextIsRock.pinhole.y, Color.darkGray);
                     } else {
                         pathArray.add(nextPath);
                         ultimate = pathArray.get(pathArray.size() - 1);
@@ -306,34 +291,33 @@ public class Game1 extends World {
                 if (ultimate.pinhole.x < 1200) {
                     int distToWallX = (ultimate.pinhole.x - upperleft.x) / CELLSIZE;
                     int distToWallY = (ultimate.pinhole.y - upperleft.y) / CELLSIZE;
-                    addRock(distToWallX, distToWallY - 1);
+                    addBlock(distToWallX, distToWallY - 1, Color.darkGray);
                 }
             }
 
             pather = new Mover(ultimate.pinhole.x, ultimate.pinhole.y);
             minMovements++;
-//            goalx = (ultimate.pinhole.x - upperleft.x) / CELLSIZE - 1;
-//            goaly = (ultimate.pinhole.y - upperleft.y) / CELLSIZE;
+            goalx = (ultimate.pinhole.x - upperleft.x) / CELLSIZE - 1;
+            goaly = (ultimate.pinhole.y - upperleft.y) / CELLSIZE - 1;
             System.out.println("pathGen is ok");
+            System.out.println("goalx " + goalx);
+            System.out.println("goaly " + goaly);
         }
-
-        //  addGoal(goalx, goaly);
-    }
+    } // wow
 
     public static void patherDirectionalChecker() {
         tempPaths.clear();
-        // if these paths are legal (i.e., not solid and not just moved from), add them to tempPaths
         if (!pather.upCheck()) {
-            tempPaths.add(pather.upNeighbor());
+            tempPaths.add(Mover.upNeighbor());
         }
         if (!pather.leftCheck()) {
-            tempPaths.add(pather.leftNeighbor());
+            tempPaths.add(Mover.leftNeighbor());
         }
         if (!pather.downCheck()) {
-            tempPaths.add(pather.downNeighbor());
+            tempPaths.add(Mover.downNeighbor());
         }
         if (!pather.rightCheck()) {
-            tempPaths.add(pather.rightNeighbor());
+            tempPaths.add(Mover.rightNeighbor());
         }
     }
 
@@ -342,7 +326,7 @@ public class Game1 extends World {
     }
 
     public static boolean canMove() {
-        return (!pather.upCheck() || !pather.leftCheck() || !pather.downCheck() || !pather.rightCheck());
+        return (!Mover.upCheck() || !Mover.leftCheck() || !Mover.downCheck() || !Mover.rightCheck());
     }
 
     /// World building functions ///
@@ -362,24 +346,29 @@ public class Game1 extends World {
         }
     }
 
-    public static void addRock(int x, int y) {
-        Color color = Color.darkGray;
+    public static void addBlock(int x, int y, Color color) {
         int XSTART = upperleft.x + (x % (CELLSWIDE - 2) + 1) * CELLSIZE;
         int YSTART = upperleft.y + (y % (CELLSHIGH - 2) + 1) * CELLSIZE;
         worldArray.add(new RectangleImage(new Posn(XSTART, YSTART), CELLSIZE, CELLSIZE, color));
     }
 
-    public static void addGoal(int x, int y) {
-        Color color = Color.cyan;
-        int XSTART = upperleft.x + (x % (CELLSWIDE - 2) + 1) * CELLSIZE;
-        int YSTART = upperleft.y + (y % (CELLSHIGH - 2) + 1) * CELLSIZE;
-        worldArray.add(new RectangleImage(new Posn(XSTART, YSTART), CELLSIZE, CELLSIZE, color));
-    }
+    public static void addConfusion() {
+        for (int i = 0; i < worldArray.size(); i++) {
+            if (!pathArray.contains(new RectangleImage(new Posn( worldArray.get(i).pinhole.x,worldArray.get(i).pinhole.y),CELLSIZE,CELLSIZE,Color.yellow) {
+            int probOfRock = 10;
+            boolean rockHuh = new Random().nextInt(probOfRock) == 0;
+            if (rockHuh) {
+                addBlock(worldArray.get(i).pinhole.x / CELLSIZE, worldArray.get(i).pinhole.y / CELLSIZE, Color.darkGray);
+            }
+        }
+    } }
 
     public static ArrayList<RectangleImage> allTheSmallThings() {
         pathStart();
         addBackground();
         pathGen();
+        addBlock(goalx, goaly, Color.cyan);
+        addConfusion();
         worldArray.trimToSize();
         return worldArray;
     }
@@ -390,16 +379,13 @@ public class Game1 extends World {
             RectangleImage temp = worldArray.get(i);
             newscene = new OverlayImages(newscene, temp);
         }
-
-        // will update this to do "if (mode = SOLVERMODE) { show this part} else {don't}"
-        // so user doesn't ever see the yellow
+//        // comment out this block to see goal
         for (int i = 0; i < pathArray.size(); i++) {
             RectangleImage path = pathArray.get(i);
             newscene = new OverlayImages(newscene, path);
         }
-
         return new OverlayImages(newscene,
-                new OverlayImages(showScore(), Char.charImage()));
+                new OverlayImages(showScore(), (Char.charImage())));
     }
 
     /// Auxiliary functions ///
@@ -426,7 +412,7 @@ public class Game1 extends World {
     }
 
     public WorldImage showScore() {
-        return new OverlayImages(new TextImage(new Posn(WIDTH / 2, 40), "Can you beat this level in " + minMovements + " moves?", 20, Color.white),
+        return new OverlayImages(new TextImage(new Posn(WIDTH / 2, 40), "Can you beat this level in fewer than " + (minMovements + 1) + " moves?", 20, Color.white),
                 new TextImage(new Posn(WIDTH / 2, 65), "You have moved: " + movements + " times!", 20, Color.white));
     }
 
@@ -441,8 +427,21 @@ public class Game1 extends World {
         this.universe = uni;
     }
 
-    public void onTick() {
-        buildWorld();
+    public void onTick() { // this ticks before it can ever be true
+        if (Char.charPos().x == goalx && Char.charPos().y == goaly) {
+            thisIsTheEnd = true;
+        } else {
+            buildWorld();
+        }
+    }
+
+    public WorldEnd worldEnds() {
+        if (thisIsTheEnd) {
+            return new WorldEnd(true, new OverlayImages(winScreen(background),
+                    new TextImage(new Posn(WIDTH / 2, HEIGHT / 2), ("Great job! You moved " + movements + " times!"), 16, Color.white)));
+        } else {
+            return new WorldEnd(false, this.makeImage());
+        }
     }
 
     public void onKeyEvent(String key) {
@@ -455,7 +454,7 @@ public class Game1 extends World {
 
     public static void main(String[] args) {
         allTheSmallThings(); // populates worldArray
-        System.out.println("ok ");
+        System.out.println("ok " + thisIsTheEnd);
         Game1 game = new Game1(universe);
         game.bigBang(WIDTH, HEIGHT);
     }
