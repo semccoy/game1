@@ -1,6 +1,5 @@
 package game1;
 
-import tester.*;
 import javalib.impworld.*;
 import javalib.worldimages.*;
 import java.awt.*;
@@ -23,8 +22,8 @@ class Testeez {
 
 public class Game1 extends World {
 
-    static int goalx, goaly;
     static int endx, endy;
+    static int goalx, goaly;
     static int WIDTH = 1440;
     static int HEIGHT = 800;
     static int CELLSIZE = 40;
@@ -32,6 +31,7 @@ public class Game1 extends World {
     static int CELLSHIGH = 15;
     static int movements = 0;
     static int minMovements = 0;
+    static int numberOfTests = 0;
     static boolean thisIsTheEnd;
     static Random rand = new Random();
     static Posn upperleft = new Posn(200, 120);
@@ -44,6 +44,7 @@ public class Game1 extends World {
     public static ArrayList<RectangleImage> pathArray = new ArrayList<RectangleImage>();
     public static ArrayList<RectangleImage> tempPaths = new ArrayList<RectangleImage>();
 
+    /// Helper classes ///
     public static class Char {
 
         static int charx = 240;
@@ -403,6 +404,7 @@ public class Game1 extends World {
         pathGen();
         addBlock(goalx, goaly, Color.cyan);
         setGoal();
+//        // uncomment this to make the game harder (it's hard enough already!)
 //        addConfusion();
         worldArray.trimToSize();
         return worldArray;
@@ -436,51 +438,90 @@ public class Game1 extends World {
     }
 
     /// Tester functions ///
-    public static void test() throws Exception {
-        // these can be repeated however many times you like
-        // for (int adNauseum = 0; adNauseum < 1000; adNauseum++) {
+    public static class TestLand {
 
-        // test for char position methods (mover works the same way)
-        Testeez.check_ints("char x", Char.charx, 240);
-        Testeez.check_ints("char y", Char.chary, 160);
-
-        // tests for char movement methods
-        // - movement sends you to the next solid block in a given direction
-        // - so we check to see if the new position is a multiple of blocks
-        // - away in the given direction (CELLSIZE = size of a square block)
-        Char.move("up");
-        Testeez.check_ints("char up", (Char.chary - CELLSIZE) % CELLSIZE, 0);
-        Char.move("down");
-        Testeez.check_ints("char down", (Char.chary + CELLSIZE) % CELLSIZE, 0);
-        Char.move("left");
-        Testeez.check_ints("char left", (Char.charx - CELLSIZE) % CELLSIZE, 0);
-        Char.move("right");
-        Testeez.check_ints("char right", (Char.charx + CELLSIZE) % CELLSIZE, 0);
-        
-        // tests whether char is in bounds
-        Testeez.check("char inBounds", Char.charx >= 240 && Char.charx <= 1200 && Char.chary >= 160 && Char.chary <= 600, true);
-
-        // tests for char directional checkers
-        // - these check for borders and rocks
-        Char charUpLeft = new Char(240, 160);
-        Char charDownRight = new Char(1200, 600);
-        Testeez.check("char up check", charUpLeft.upCheck(), true);
-        Testeez.check("char left check", charUpLeft.leftCheck(), true);
-        Testeez.check("char down check", charDownRight.downCheck(), true);
-        Testeez.check("char right check", charDownRight.rightCheck(), true); 
-    
-
-        // }
+        TestLand() {
         }
 
-    /// Game worlds functions ///
+        static Char testChar = new Char(240, 160);
+        static ArrayList<RectangleImage> testArray = new ArrayList<RectangleImage>();
+
+        public static void test() throws Exception {
+            TestLand tw = new TestLand();
+            Game1 testGame = new Game1(universe);
+
+            // these can be repeated however many times
+            for (int adNauseum = 0; adNauseum < 1000; adNauseum++) {
+
+                // test for char position methods (mover works the same way)
+                Testeez.check_ints("char x", tw.testChar.charx, 240);
+                Testeez.check_ints("char y", tw.testChar.chary, 160);
+
+                // tests for char movement methods AND for onKeyEvent working
+                // - movement sends you to the next solid block in a given direction
+                // - so we check to see if the new position is a multiple of blocks
+                // - away in the given direction (CELLSIZE = size of a square block)
+                // - also, hitting "x" sticks you back  at the start
+                tw.testChar.move("up");
+                Testeez.check_ints("char up", (tw.testChar.chary - CELLSIZE) % CELLSIZE, 0);
+                tw.testChar.move("down");
+                Testeez.check_ints("char down", (tw.testChar.chary + CELLSIZE) % CELLSIZE, 0);
+                tw.testChar.move("left");
+                Testeez.check_ints("char left", (tw.testChar.charx - CELLSIZE) % CELLSIZE, 0);
+                tw.testChar.move("right");
+                Testeez.check_ints("char right", (tw.testChar.charx + CELLSIZE) % CELLSIZE, 0);
+                tw.testChar.move("x");
+                Testeez.check("char back to start", tw.testChar.charx == 240 && tw.testChar.chary == 160, true);
+
+                // tests whether char is in bounds
+                Testeez.check("char inBounds", tw.testChar.charx >= 240 && tw.testChar.charx <= 1200 && tw.testChar.chary >= 160 && tw.testChar.chary <= 600, true);
+
+                // tests for char directional checkers
+                // - these check for borders and rocks where there are some
+                Testeez.check("char up check", tw.testChar.upCheck(), true);
+                Testeez.check("char left check", tw.testChar.leftCheck(), true);
+                // - and these check for borders and rocks where there are none
+                Testeez.check("char down check", tw.testChar.downCheck(), false);
+                Testeez.check("char right check", tw.testChar.rightCheck(), false);
+
+                // test to see if char starts on goal
+                Testeez.check("char ongoal", Char.onGoal(), false);
+
+                // test for random integer generator
+                // - to see if random int within valid range
+                int testMe = randomInt(0, 10);
+                Testeez.check("random int", testMe >= 0 && testMe <= 10, true);
+
+                // test for score being calculated correctly (also tests movement)
+                // - score should be 7 since we tested moving left, right, up, and down earlier;
+                // - since two of those directions are walls, movements does not increment,
+                // - for the other two it does, and "x"ing adds five to movements as a penalty
+                // - for resorting to using it. so we have seven!
+                Testeez.check_ints("score", movements, 7);
+
+                thisIsTheEnd = false;
+                // test for char being on goal signaling for the world to end
+                Testeez.check("on tick", Char.onGoal(), thisIsTheEnd);
+
+                // test for ending the game (thisIsTheEnd being true ends the game)
+                thisIsTheEnd = true;
+                Testeez.check("game ends", testGame.worldEnds().worldEnds, true);
+
+                // resetting these for the for loop
+                movements = 0;
+                numberOfTests++;
+            }
+        }
+    }
+
+    /// GameWorlds functions ///
     public Game1(WorldImage uni) {
         super();
         this.universe = uni;
     }
 
     public WorldImage makeImage() {
-        return buildWorld(); // returns everything in worldArray
+        return buildWorld();
     }
 
     public void onTick() {
@@ -514,15 +555,9 @@ public class Game1 extends World {
 
     public static void main(String[] args) throws Exception {
         allTheSmallThings();
-        Game1.test();
-        System.out.println("all test passed :)");
+        Game1.TestLand.test();
+        System.out.println("All tests passed " + numberOfTests + " times :)");
         Game1 game = new Game1(universe);
         game.bigBang(WIDTH, HEIGHT, .1);
     }
 }
-
-/*
- You should write a short game manual that describes the rules of your game. You should run this past me so we can agree that the game is complex and interesting enough. You should use the invariants of your game to design testable components. 
-
- You should be able to build a completely automated version of your game for testing. For example, in my Tetris game, I might parameterize the game over a Tetrimino generator and a Input stream, so that I can test explicit sequences of inputs on Block sequences and ensure that the rules of the game are enforced.
- */
