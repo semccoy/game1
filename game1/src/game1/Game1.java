@@ -64,6 +64,12 @@ public class Game1 extends World {
                     charx = charx + CELLSIZE;
                 }
                 movements++;
+            } else if (key.equals("x")) {
+                while (!upCheck()) {
+                    charx = 240;
+                    chary = 160;
+                }
+                movements = movements + 5;
             }
         }
 
@@ -356,15 +362,18 @@ public class Game1 extends World {
     }
 
     public static void addConfusion() {
-        ArrayList<RectangleImage> canRock = worldArray;
-        for (int i = 0; i < canRock.size(); i++) {  // + 40 and start with start coords
-            if (pathArray.contains(new RectangleImage(new Posn(canRock.get(i).pinhole.x, canRock.get(i).pinhole.y), CELLSIZE, CELLSIZE, Color.yellow))) {
-                canRock.remove(i);
-            }
-            int probOfRock = 25;
-            boolean rockHuh = new Random().nextInt(probOfRock) == 0;
-            if (rockHuh) {
-                addBlock(canRock.get(i).pinhole.x / CELLSIZE - 1, canRock.get(i).pinhole.y / CELLSIZE - 1, Color.darkGray);
+        for (int x = 0; x < CELLSWIDE; x++) {
+            for (int y = 0; y < CELLSHIGH; y++) {
+                int XSTART = 240 + x * CELLSIZE;
+                int YSTART = 160 + y * CELLSIZE;
+                if (!pathArray.contains(new RectangleImage(new Posn(XSTART, YSTART), CELLSIZE, CELLSIZE, Color.yellow))
+                        && !(x == 0 && y == 0) && !(x == endx && y == endy)) { // can't spawn rocks in optimal path, start, or end
+                    int probOfRock = 20;
+                    boolean rockHuh = new Random().nextInt(probOfRock) == 0;
+                    if (rockHuh) {
+                        addBlock(x, y, Color.darkGray);
+                    }
+                }
             }
         }
     }
@@ -372,17 +381,11 @@ public class Game1 extends World {
     public static void setGoal() {
         endx = (pathArray.get(pathArray.size() - 1).pinhole.x - upperleft.x) / CELLSIZE - 1;
         endy = (pathArray.get(pathArray.size() - 1).pinhole.y - upperleft.y) / CELLSIZE - 1;
-        if (endx ==0 && endy ==0) {
-            pathArray.clear();
-            tempPaths.clear();
-            pathGen();
-            setGoal();
-        }
     }
 
     public static ArrayList<RectangleImage> allTheSmallThings() {
-        pathStart();
         addBackground();
+        pathStart();
         pathGen();
         addBlock(goalx, goaly, Color.cyan);
         setGoal();
@@ -449,9 +452,9 @@ public class Game1 extends World {
         String winText;
         if (thisIsTheEnd) {
             if (movements <= minMovements) {
-                winText = "Great job! It only took you " + movements + " moves!";
+                winText = "Great job! That only took you " + movements + " moves!";
             } else if (movements <= (minMovements + 10)) {
-                winText = "Not bad! You made " + movements + " moves.";
+                winText = "Not bad! That was " + movements + " moves.";
             } else {
                 winText = "What are you doing?? What took you " + movements + " moves?";
             }
@@ -471,8 +474,6 @@ public class Game1 extends World {
 }
 
 /*
- A win or fail state.
-
  You should write a short game manual that describes the rules of your game. You should run this past me so we can agree that the game is complex and interesting enough. You should use the invariants of your game to design testable components. 
 
  You should be able to build a completely automated version of your game for testing. For example, in my Tetris game, I might parameterize the game over a Tetrimino generator and a Input stream, so that I can test explicit sequences of inputs on Block sequences and ensure that the rules of the game are enforced.
