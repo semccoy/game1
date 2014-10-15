@@ -202,33 +202,6 @@ public class Game1 extends World {
         }
     }
 
-    public static class TestWorld {
-
-        TestWorld() {
-        }
-
-        int endx, endy, goalx, goaly = 400;
-        Char testChar = new Char(240, 160);
-        Mover testMover = new Mover(240, 160);
-
-        public static ArrayList<RectangleImage> testWorldArray = new ArrayList<RectangleImage>();
-        public static ArrayList<RectangleImage> testPathArray = new ArrayList<RectangleImage>();
-        public static ArrayList<RectangleImage> testTempPaths = new ArrayList<RectangleImage>();
-
-        public static void test() throws Exception {
-            TestWorld tw = new TestWorld();
-            // test for char position methods (mover works the same way)
-            Testeez.check_ints("char x", tw.testChar.charPos().x, 240);
-            Testeez.check_ints("char y", tw.testChar.charPos().y, 160);
-            
-            // test for char movement methods
-            int charY = tw.testChar.chary;
-            tw.testChar.move("up");
-            Testeez.check_ints("char up",charY-40, charY);
-            
-        }
-    }
-
     /// Pathing functions ///
     public static void pathGen() {
         while (canMove()) {
@@ -462,6 +435,44 @@ public class Game1 extends World {
                 new TextImage(new Posn(WIDTH / 2, 65), "You have moved: " + movements + " times!", 20, Color.white));
     }
 
+    /// Tester functions ///
+    public static void test() throws Exception {
+        // these can be repeated however many times you like
+        // for (int adNauseum = 0; adNauseum < 1000; adNauseum++) {
+
+        // test for char position methods (mover works the same way)
+        Testeez.check_ints("char x", Char.charx, 240);
+        Testeez.check_ints("char y", Char.chary, 160);
+
+        // tests for char movement methods
+        // - movement sends you to the next solid block in a given direction
+        // - so we check to see if the new position is a multiple of blocks
+        // - away in the given direction (CELLSIZE = size of a square block)
+        Char.move("up");
+        Testeez.check_ints("char up", (Char.chary - CELLSIZE) % CELLSIZE, 0);
+        Char.move("down");
+        Testeez.check_ints("char down", (Char.chary + CELLSIZE) % CELLSIZE, 0);
+        Char.move("left");
+        Testeez.check_ints("char left", (Char.charx - CELLSIZE) % CELLSIZE, 0);
+        Char.move("right");
+        Testeez.check_ints("char right", (Char.charx + CELLSIZE) % CELLSIZE, 0);
+        
+        // tests whether char is in bounds
+        Testeez.check("char inBounds", Char.charx >= 240 && Char.charx <= 1200 && Char.chary >= 160 && Char.chary <= 600, true);
+
+        // tests for char directional checkers
+        // - these check for borders and rocks
+        Char charUpLeft = new Char(240, 160);
+        Char charDownRight = new Char(1200, 600);
+        Testeez.check("char up check", charUpLeft.upCheck(), true);
+        Testeez.check("char left check", charUpLeft.leftCheck(), true);
+        Testeez.check("char down check", charDownRight.downCheck(), true);
+        Testeez.check("char right check", charDownRight.rightCheck(), true); 
+    
+
+        // }
+        }
+
     /// Game worlds functions ///
     public Game1(WorldImage uni) {
         super();
@@ -503,7 +514,7 @@ public class Game1 extends World {
 
     public static void main(String[] args) throws Exception {
         allTheSmallThings();
-        Game1.TestWorld.test();
+        Game1.test();
         System.out.println("all test passed :)");
         Game1 game = new Game1(universe);
         game.bigBang(WIDTH, HEIGHT, .1);
