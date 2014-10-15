@@ -6,6 +6,21 @@ import javalib.worldimages.*;
 import java.awt.*;
 import java.util.*;
 
+class Testeez {
+
+    public static void check(String label, Object x, Object y) throws Exception {
+        if (x != y) {
+            throw new Exception("\n" + label + ": " + x + " should equal " + y + " but it don't :(");
+        }
+    }
+
+    public static void check_ints(String label, int x, int y) throws Exception {
+        if (x != y) {
+            throw new Exception("\n" + label + ": " + x + " should equal " + y + " but it don't :(");
+        }
+    }
+}
+
 public class Game1 extends World {
 
     static int goalx, goaly;
@@ -187,6 +202,33 @@ public class Game1 extends World {
         }
     }
 
+    public static class TestWorld {
+
+        TestWorld() {
+        }
+
+        int endx, endy, goalx, goaly = 400;
+        Char testChar = new Char(240, 160);
+        Mover testMover = new Mover(240, 160);
+
+        public static ArrayList<RectangleImage> testWorldArray = new ArrayList<RectangleImage>();
+        public static ArrayList<RectangleImage> testPathArray = new ArrayList<RectangleImage>();
+        public static ArrayList<RectangleImage> testTempPaths = new ArrayList<RectangleImage>();
+
+        public static void test() throws Exception {
+            TestWorld tw = new TestWorld();
+            // test for char position methods (mover works the same way)
+            Testeez.check_ints("char x", tw.testChar.charPos().x, 240);
+            Testeez.check_ints("char y", tw.testChar.charPos().y, 160);
+            
+            // test for char movement methods
+            int charY = tw.testChar.chary;
+            tw.testChar.move("up");
+            Testeez.check_ints("char up",charY-40, charY);
+            
+        }
+    }
+
     /// Pathing functions ///
     public static void pathGen() {
         while (canMove()) {
@@ -310,7 +352,6 @@ public class Game1 extends World {
             minMovements++;
             goalx = (ultimate.pinhole.x - upperleft.x) / CELLSIZE - 1;
             goaly = (ultimate.pinhole.y - upperleft.y) / CELLSIZE - 1;
-            System.out.println("pathGen is ok");
         }
     }
 
@@ -366,7 +407,7 @@ public class Game1 extends World {
             for (int y = 0; y < CELLSHIGH; y++) {
                 int XSTART = 240 + x * CELLSIZE;
                 int YSTART = 160 + y * CELLSIZE;
-                if (!pathArray.contains(new RectangleImage(new Posn(XSTART, YSTART), CELLSIZE, CELLSIZE, Color.yellow))
+                if (!(pathArray.contains(new RectangleImage(new Posn(XSTART, YSTART), CELLSIZE, CELLSIZE, Color.yellow)))
                         && !(x == 0 && y == 0) && !(x == endx && y == endy)) { // can't spawn rocks in optimal path, start, or end
                     int probOfRock = 20;
                     boolean rockHuh = new Random().nextInt(probOfRock) == 0;
@@ -421,11 +462,6 @@ public class Game1 extends World {
                 new TextImage(new Posn(WIDTH / 2, 65), "You have moved: " + movements + " times!", 20, Color.white));
     }
 
-    /// Tester functions ///
-
-    /*
-     more to come!
-     */
     /// Game worlds functions ///
     public Game1(WorldImage uni) {
         super();
@@ -465,9 +501,10 @@ public class Game1 extends World {
         }
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         allTheSmallThings();
-        System.out.println("ok ");
+        Game1.TestWorld.test();
+        System.out.println("all test passed :)");
         Game1 game = new Game1(universe);
         game.bigBang(WIDTH, HEIGHT, .1);
     }
